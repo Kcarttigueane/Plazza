@@ -48,3 +48,8 @@ enum ErrorCodes {
     FAILURE = -1,
     ERROR = 84,
 };
+
+// ! My includes:
+
+void get_program_arguments(int argc, char* argv[], float& timeMultiplier, size_t& cooksPerKitchen,
+                           size_t& replenishmentTime);
