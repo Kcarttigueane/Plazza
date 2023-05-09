@@ -57,16 +57,32 @@ UIManager& Reception::getUIManager()
 
 // ! Methods:
 
-static void display_status_response()
+std::tuple<std::string, int, int, std::string> parse_status_response(
+    const std::string& statusResponse)
+{
+    std::istringstream ss(statusResponse);
+    std::string prefix;
+    std::string kitchenID;
+    int cooksPerKitchen;
+    int pizzaOrderQueueLength;
+    std::string stock;
+
+    ss >> prefix >> kitchenID >> cooksPerKitchen >> pizzaOrderQueueLength >> stock;
+
+    return std::make_tuple(kitchenID, cooksPerKitchen, pizzaOrderQueueLength, stock);
+}
+
+void display_status_response(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
+                             const std::string& ingredientStock)
 {
     std::cout << "status" << std::endl;
-    // for (const auto& kitchenStatus : aggregatedStatus) {
-    //     std::cout << std::setw(10) << kitchenStatus.kitchenID << " | " << std::setw(18)
-    //               << kitchenStatus.pizzasInProgress << " | " << std::setw(15)
-    //               << kitchenStatus.availableCooks << " | " << std::setw(16)
-    //               << kitchenStatus.ingredientStock << std::endl;
-    // }
-    // TODO  Implement logic to display the status of each kitchen
+    std::cout << std::setw(10) << "Kitchen ID"
+              << " | " << std::setw(18) << "Pizzas in Progress"
+              << " | " << std::setw(15) << "Available Cooks"
+              << " | " << std::setw(16) << "Ingredient Stock" << std::endl;
+    std::cout << std::setw(10) << kitchenID << " | " << std::setw(18) << pizzasInProgress << " | "
+              << std::setw(15) << availableCooks << " | " << std::setw(16) << ingredientStock
+              << std::endl;
 }
 
 void Reception::interactive_shell_loop()
@@ -95,10 +111,25 @@ void Reception::send_status_request_to_all_kitchens()
 
 void Reception::process_updates()
 {
-    // Get the update string from the message queue or other source of updates : while true ?
-    std::string update = "La vie est belle\n";
-    _uiManager.display_update(update);
-    appendToFile("log.txt", update);
+    // ? Get the update string from the message queue or other source of updates : while true ?
+    std::string update =
+        "PizzaOrderResponse: #124 (1/7) completed: Margarita(L) prepared by Kitchen #2";
+
+    size_t pos = update.find(":");
+    std::string first_word = update.substr(0, pos);
+
+    if (first_word == "statusResponse") {
+        auto statusTuple = parse_status_response(update);
+        std::string kitchenID = std::get<0>(statusTuple);
+        int availableCooks = std::get<1>(statusTuple);
+        int pizzasInProgress = std::get<2>(statusTuple);
+        std::string ingredientStock = std::get<3>(statusTuple);
+        display_status_response(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
+        _uiManager.display_update(update);
+    } else {
+        _uiManager.display_update(update);
+        appendToFile("log.txt", update);
+    }
 }
 
 void Reception::create_new_kitchen()
