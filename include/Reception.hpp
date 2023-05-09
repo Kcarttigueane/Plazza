@@ -22,14 +22,6 @@ class Reception {
 
     UIManager& _uiManager;
 
-    // ! Message Queue for sending pizza orders to Kitchen processes
-
-    std::unordered_map<pid_t, MessageQueueIPC> _orderMessageQueues;
-    std::unordered_map<pid_t, size_t> _activeOrdersPerKitchen;
-
-    // ! Updates Message Queue for receiving updates from Kitchen processes
-    MessageQueueIPC _updatesMessageQueue;
-
     // ! Add other necessary members for managing updates
 
     std::mutex _updateMutex;
@@ -41,9 +33,10 @@ class Reception {
     std::vector<pid_t> _kitchenPIDs;
     std::map<pid_t, std::chrono::steady_clock::time_point> _kitchenLastUpdateTimes;
 
+    std::map<int, std::string> _kitchenPipes;
+
   public:
-    Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time,
-              UIManager& uiManager);
+    Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time);
 
     virtual ~Reception(){};
 
@@ -52,9 +45,6 @@ class Reception {
     float getTimeMultiplier() const;
     int getCooksPerKitchen() const;
     int getReplenishmentTime() const;
-    MessageQueueIPC& getOrderMessageQueueByPid(pid_t pid);
-    MessageQueueIPC& getUpdateMessageQueue();
-    UIManager& getUIManager();
 
     // ! Methods
 
