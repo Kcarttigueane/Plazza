@@ -67,7 +67,16 @@ class Reception {
 
     int getReplenishmentTime() const { return _replenishmentTime; }
 
-    NamedPipeIPC& getNamedPipeByPid(pid_t pid);
+    NamedPipeIPC& getNamedPipeByPid(pid_t pid)
+    {
+        auto it = _kitchenPipes.find(pid);
+
+        if (it == _kitchenPipes.end()) {
+            throw std::runtime_error("No order message queue found for PID " + std::to_string(pid));
+        } else {
+            return *it->second;
+        }
+    }
 
     // ! Methods
 
