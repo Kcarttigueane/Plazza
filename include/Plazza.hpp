@@ -41,6 +41,8 @@
 #include <unistd.h>
 #include <string>
 
+#include "Colors.hpp"
+
 #define USAGE "USAGE: ./plazza [multiplier] [cooks_per_kitchen] [time]\n"
 
 enum ErrorCodes {

@@ -7,55 +7,113 @@
 
 #include "Reception.hpp"
 
-Reception::Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time,
-                     UIManager& uiManager)
-    : _timeMultiplier(multiplier),
-      _cookPerKitchen(cooks_per_kitchen),
-      _replenishmentTime(replenishment_time),
-      _uiManager(uiManager),
-      _updatesMessageQueue("/UpdatesMessageQueue"),
-      _updatesPaused(false)
-{}
-
-// ! Getters:
-
-float Reception::getTimeMultiplier() const
+NamedPipeIPC& Reception::getNamedPipeByPid(pid_t pid)
 {
-    return _timeMultiplier;
-}
+    auto it = _kitchenPipes.find(pid);
 
-int Reception::getCooksPerKitchen() const
-{
-    return _cookPerKitchen;
-}
-
-int Reception::getReplenishmentTime() const
-{
-    return _replenishmentTime;
-}
-
-MessageQueueIPC& Reception::getOrderMessageQueueByPid(pid_t pid)
-{
-    auto it = _orderMessageQueues.find(pid);
-
-    if (it == _orderMessageQueues.end()) {
+    if (it == _kitchenPipes.end()) {
         throw std::runtime_error("No order message queue found for PID " + std::to_string(pid));
     } else {
-        return it->second;
+        return *it->second;
     }
 }
 
-MessageQueueIPC& Reception::getUpdateMessageQueue()
-{
-    return _updatesMessageQueue;
-}
-
-UIManager& Reception::getUIManager()
-{
-    return _uiManager;
-}
-
 // ! Methods:
+
+void Reception::interactive_shell_loop()
+{
+    while (true) {
+        std::string input;
+        std::cout << "> ";
+        std::getline(std::cin, input);
+
+        if (input == "QUIT") {
+            break;
+        }
+
+        if (input == "status") {
+            send_status_request_to_all_kitchens();
+        }
+
+        parse_pizza_order(input, *this);
+    }
+}
+
+void Reception::create_new_kitchen()
+{
+    std::string orderPipeName = "/tmp/order_pipe_0";
+
+    // ! Create a new kitchen process
+    pid_t kitchenPid = fork();
+
+    if (kitchenPid < 0) {
+        std::cerr << "Error creating kitchen process." << std::endl;
+        exit(1);
+    }
+
+    if (kitchenPid == 0) {  // Child process
+        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName);
+        sleep(1);
+
+        kitchen.run();
+    } else {
+
+        std::cout << "pid: " << kitchenPid << std::endl;
+        // _kitchenPIDs.push_back(kitchenPid);
+        _kitchenPipes[kitchenPid] =
+            std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
+
+        _kitchenPipes[kitchenPid]->write("1 2 5 2 4");  // Add this line
+        _kitchenPipes[kitchenPid]->write("oups");
+    }
+}
+
+void Reception::close_idle_kitchens() {}
+
+// ? this function logic should change for load balancing
+void Reception::distribute_order(PizzaOrder& order)
+{
+    // ! If there are no kitchens, create one:
+    if (_kitchenPIDs.empty()) {
+        create_new_kitchen();
+    }
+
+    // // ! Find the kitchen with the least number of active orders:
+    // pid_t selectedPID = _kitchenPIDs.front();
+
+    // std::cout << "distributing order" << std::endl;
+
+    // size_t minActiveOrders = _activeOrdersPerKitchen[selectedPID];
+
+    // for (const pid_t& pid : _kitchenPIDs) {
+    //     if (_activeOrdersPerKitchen[pid] < minActiveOrders) {
+    //         selectedPID = pid;
+    //         minActiveOrders = _activeOrdersPerKitchen[pid];
+    //     }
+    // }
+
+    // // ! Increment the active orders count for the selected kitchen
+    // _activeOrdersPerKitchen[selectedPID]++;
+
+    // ! Serialize the pizza order and send it to the selected kitchen's message queue
+    // std::ostringstream oss;
+    // oss << pizzaOrder;
+    // string serializedPizzaOrder = oss.str();
+
+    // std::stringstream serialized_order;
+    // serialized_order << order;
+
+    // getNamedPipeByPid(selectedPID).write("1 3 2 5 1 2");
+}
+
+void Reception::manage_kitchens() {}
+
+void Reception::send_status_request_to_all_kitchens()
+{
+    for (auto& namedPipeEntry : _kitchenPipes) {
+        namedPipeEntry.second->write("statusRequest");
+    }
+}
 
 std::tuple<std::string, int, int, std::string> parse_status_response(
     const std::string& statusResponse)
@@ -85,30 +143,6 @@ void display_status_response(const std::string& kitchenID, int pizzasInProgress,
               << std::endl;
 }
 
-void Reception::interactive_shell_loop()
-{
-    while (true) {
-        std::string input = _uiManager.get_user_input();
-
-        if (input == "QUIT") {
-            break;
-        }
-
-        if (input == "status") {
-            send_status_request_to_all_kitchens();
-        }
-
-        parse_pizza_order(input, *this);
-    }
-}
-
-void Reception::send_status_request_to_all_kitchens()
-{
-    for (auto& orderMessageQueueEntry : _orderMessageQueues) {
-        orderMessageQueueEntry.second.send("statusRequest");
-    }
-}
-
 void Reception::process_updates()
 {
     // ? Get the update string from the message queue or other source of updates : while true ?
@@ -125,62 +159,7 @@ void Reception::process_updates()
         int pizzasInProgress = std::get<2>(statusTuple);
         std::string ingredientStock = std::get<3>(statusTuple);
         display_status_response(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
-        _uiManager.display_update(update);
     } else {
-        _uiManager.display_update(update);
         appendToFile("log.txt", update);
     }
 }
-
-void Reception::create_new_kitchen()
-{
-    // Process process([this]() {
-    //     Kitchen kitchen(_cookPerKitchen, _replenishmentTime,
-    //                     "/OrderMessageQueue_" + std::to_string(getpid()), "/UpdatesMessageQueue");
-    //     kitchen.run();
-    // });
-
-    // pid_t new_pid = process.getPid();
-    // _kitchenPIDs.push_back(new_pid);
-
-    // // ! Create a new Order Message Queue for the new kitchen process
-    // _orderMessageQueues[new_pid] =
-    //     MessageQueueIPC("/OrderMessageQueue_" + std::to_string(new_pid), true);
-}
-
-void Reception::close_idle_kitchens() {}
-
-// ? this function logic should change for load balancing
-void Reception::distribute_order(PizzaOrder& order)
-{
-    // ! If there are no kitchens, create one:
-    if (_kitchenPIDs.empty()) {
-        create_new_kitchen();
-    }
-
-    // ! Find the kitchen with the least number of active orders:
-    pid_t selectedPID = _kitchenPIDs.front();
-    size_t minActiveOrders = _activeOrdersPerKitchen[selectedPID];
-
-    for (const pid_t& pid : _kitchenPIDs) {
-        if (_activeOrdersPerKitchen[pid] < minActiveOrders) {
-            selectedPID = pid;
-            minActiveOrders = _activeOrdersPerKitchen[pid];
-        }
-    }
-
-    // ! Increment the active orders count for the selected kitchen
-    _activeOrdersPerKitchen[selectedPID]++;
-
-    // ! Serialize the pizza order and send it to the selected kitchen's message queue
-    // std::ostringstream oss;
-    // oss << pizzaOrder;
-    // string serializedPizzaOrder = oss.str();
-
-    std::stringstream serialized_order;
-    serialized_order << order;
-
-    getOrderMessageQueueByPid(selectedPID).send(serialized_order.str());
-}
-
-void Reception::manage_kitchens() {}

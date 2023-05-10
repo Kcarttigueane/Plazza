@@ -9,7 +9,7 @@
 
 #include "Plazza.hpp"
 
-constexpr int BUFFER_SIZE = 1024;
+constexpr size_t BUFFER_SIZE = 1024;
 constexpr char DELIMITER = '\0';
 
 #include <fcntl.h>
@@ -32,7 +32,6 @@ constexpr char DELIMITER = '\0';
 ** reading and writing messages between processes and automatically manages the underlying
 ** named pipe file.
 **/
-
 class NamedPipeIPC {
   public:
     /**
@@ -68,48 +67,18 @@ class NamedPipeIPC {
     ~NamedPipeIPC()
     {
         closePipe();
-        std::remove(_pipeName.c_str());
+        if (_mode == Mode::Write) {
+            std::remove(_pipeName.c_str());
+        }
     }
 
-    /**
-    ** Closes the named pipe file and removes it from the filesystem.
-    **/
     NamedPipeIPC& operator=(const NamedPipeIPC&) = delete;
 
     // ! Getter:
 
     std::string getPipeName() const { return _pipeName; }
 
-    size_t getNbElement()
-    {
-        if (_mode != Mode::Read) {
-            throw std::runtime_error("NamedPipeIPC is not in read mode");
-        }
-
-        off_t currentPos = lseek(_pipeFd, 0, SEEK_CUR);
-        int flags = fcntl(_pipeFd, F_GETFL, 0);
-        fcntl(_pipeFd, F_SETFL, flags | O_NONBLOCK);
-
-        lseek(_pipeFd, 0, SEEK_SET);
-
-        size_t count = 0;
-        char buffer;
-        ssize_t bytesRead;
-        while ((bytesRead = ::read(_pipeFd, &buffer, 1)) > 0) {
-            if (buffer == DELIMITER) {
-                count++;
-            }
-        }
-
-        if (bytesRead < 0 && errno != EAGAIN) {
-            throw std::runtime_error("Failed to read from the named pipe");
-        }
-
-        lseek(_pipeFd, currentPos, SEEK_SET);
-        fcntl(_pipeFd, F_SETFL, flags);
-
-        return count;
-    }
+    int getPipeFd() const { return _pipeFd; }
 
     // ! Methods
 
@@ -122,7 +91,6 @@ class NamedPipeIPC {
     ** @param message The message to write to the named pipe.
     ** @throw std::runtime_error if the NamedPipeIPC object is not in Write mode or if writing fails.
     **/
-
     void write(const std::string& message)
     {
         if (_mode != Mode::Write) {
@@ -159,11 +127,37 @@ class NamedPipeIPC {
         std::unique_ptr<char[]> buffer(new char[_bufferSize]);
 
         ssize_t bytesRead = ::read(_pipeFd, buffer.get(), _bufferSize);
+
         if (bytesRead < 0) {
             throw std::runtime_error("Failed to read from the named pipe");
         }
 
+        // std::cout << GREEN_TEXT("Read: ") << "\"" GREEN_TEXT(buffer.get())
+        //           << "\" : " << RED_TEXT(_pipeName) << std::endl;
+
         return std::string(buffer.get(), bytesRead);
+    }
+
+    bool isDataAvailable(int timeout_ms)
+    {
+        if (_mode != Mode::Read) {
+            throw std::runtime_error("Invalid operation: pipe is not opened for reading.");
+        }
+
+        struct timeval tv;
+        tv.tv_sec = timeout_ms / 1000;
+        tv.tv_usec = (timeout_ms % 1000) * 1000;
+
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(_pipeFd, &read_fds);
+
+        int ret = select(_pipeFd + 1, &read_fds, nullptr, nullptr, &tv);
+        if (ret < 0) {
+            throw std::runtime_error("Error in select(): " + std::string(strerror(errno)));
+        }
+
+        return ret > 0 && FD_ISSET(_pipeFd, &read_fds);
     }
 
   private:
@@ -172,7 +166,7 @@ class NamedPipeIPC {
         int flags = (_mode == Mode::Read) ? O_RDONLY : O_WRONLY;
         _pipeFd = open(_pipeName.c_str(), flags);
 
-        std::cout << GREEN_TEXT("Open: ") << RED_TEXT(_pipeName) << std::endl;
+        std::cout << BLUE_TEXT("Open: ") << RED_TEXT(_pipeName) << std::endl;
 
         if (_pipeFd < 0) {
             throw std::runtime_error("Failed to open the named pipe");

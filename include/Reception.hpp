@@ -8,7 +8,6 @@
 #pragma once
 
 #include "Kitchen.hpp"
-#include "MessageQueueIPC.hpp"
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 #include "Process.hpp"
@@ -20,7 +19,7 @@ class Reception {
     size_t _cookPerKitchen;
     size_t _replenishmentTime;
 
-    UIManager& _uiManager;
+    // UIManager& _uiManager;
 
     // ! Add other necessary members for managing updates
 
@@ -33,18 +32,42 @@ class Reception {
     std::vector<pid_t> _kitchenPIDs;
     std::map<pid_t, std::chrono::steady_clock::time_point> _kitchenLastUpdateTimes;
 
-    std::map<int, std::string> _kitchenPipes;
+    std::unordered_map<pid_t, std::unique_ptr<NamedPipeIPC>> _kitchenPipes;
+
+    std::map<pid_t, NamedPipeIPC> _UpdatesPipes;
+
+    std::map<pid_t, size_t> _activeOrdersPerKitchen;
+
+    std::condition_variable _kitchenReadyCondition;
+    std::mutex _kitchenReadyMutex;
+    bool _kitchenReady = false;
 
   public:
-    Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time);
+    Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time)
+        : _timeMultiplier(multiplier),
+          _cookPerKitchen(cooks_per_kitchen),
+          _replenishmentTime(replenishment_time),
+          _updatesPaused(false)
+    {}
 
-    virtual ~Reception(){};
+    ~Reception()
+    {
+        for (const auto& pid : _kitchenPIDs) {
+            kill(pid, SIGTERM);
+            int status;
+            waitpid(pid, &status, 0);
+        }
+    }
 
     // ! Getters:
 
-    float getTimeMultiplier() const;
-    int getCooksPerKitchen() const;
-    int getReplenishmentTime() const;
+    float getTimeMultiplier() const { return _timeMultiplier; }
+
+    int getCooksPerKitchen() const { return _cookPerKitchen; }
+
+    int getReplenishmentTime() const { return _replenishmentTime; }
+
+    NamedPipeIPC& getNamedPipeByPid(pid_t pid);
 
     // ! Methods
 

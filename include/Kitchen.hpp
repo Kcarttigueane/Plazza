@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Ingredients.hpp"
-#include "MessageQueueIPC.hpp"
+#include "NamePipeIPC.hpp"
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 
@@ -17,6 +17,9 @@ class Kitchen {
     size_t _kitchenId;
     size_t _cooksPerKitchen;
     size_t _replenishmentTime;
+
+    NamedPipeIPC _orderPipe;
+    // NamedPipeIPC _updatePipe;
 
     std::atomic<bool> _running;
     std::vector<std::thread> _cookThreads;
@@ -28,7 +31,7 @@ class Kitchen {
     Ingredients _stock;
 
   public:
-    Kitchen(size_t cooks_per_kitchen, size_t replenishment_time);
+    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName);
 
     ~Kitchen();
 
@@ -43,7 +46,7 @@ class Kitchen {
 
     void run();
 
-    void process_orders();
+    void processOrders();
 
     void sendUpdateMessage(const PizzaOrder& order, int _kitchenId);
 
