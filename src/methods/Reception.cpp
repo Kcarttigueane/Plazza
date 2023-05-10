@@ -47,7 +47,7 @@ void Reception::create_new_kitchen()
     } else {  // ! Parent process
         std::cout << "pid: " << kitchenPid << std::endl;
         _kitchenPIDs.push_back(kitchenPid);
-        _kitchenPipes[kitchenPid] =
+        _orderPipes[kitchenPid] =
             std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
     }
 }
@@ -89,7 +89,7 @@ void Reception::manage_kitchens() {}
 
 void Reception::send_status_request_to_all_kitchens()
 {
-    for (auto& namedPipeEntry : _kitchenPipes) {
+    for (auto& namedPipeEntry : _orderPipes) {
         namedPipeEntry.second->write("statusRequest");
     }
 }

@@ -21,33 +21,20 @@ class Reception {
 
     // UIManager& _uiManager;
 
-    // ! Add other necessary members for managing updates
-
-    std::mutex _updateMutex;
-    std::condition_variable _updatesCV;
-    bool _updatesPaused;
-
-    // ! Kitchen processes
-
     std::vector<pid_t> _kitchenPIDs;
+
     std::map<pid_t, std::chrono::steady_clock::time_point> _kitchenLastUpdateTimes;
 
-    std::unordered_map<pid_t, std::unique_ptr<NamedPipeIPC>> _kitchenPipes;
-
+    std::unordered_map<pid_t, std::unique_ptr<NamedPipeIPC>> _orderPipes;
     std::map<pid_t, NamedPipeIPC> _UpdatesPipes;
 
     std::map<pid_t, size_t> _activeOrdersPerKitchen;
-
-    std::condition_variable _kitchenReadyCondition;
-    std::mutex _kitchenReadyMutex;
-    bool _kitchenReady = false;
 
   public:
     Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time)
         : _timeMultiplier(multiplier),
           _cookPerKitchen(cooks_per_kitchen),
-          _replenishmentTime(replenishment_time),
-          _updatesPaused(false)
+          _replenishmentTime(replenishment_time)
     {}
 
     ~Reception()
@@ -69,9 +56,9 @@ class Reception {
 
     NamedPipeIPC& getNamedPipeByPid(pid_t pid)
     {
-        auto it = _kitchenPipes.find(pid);
+        auto it = _orderPipes.find(pid);
 
-        if (it == _kitchenPipes.end()) {
+        if (it == _orderPipes.end()) {
             throw std::runtime_error("No order message queue found for PID " + std::to_string(pid));
         } else {
             return *it->second;

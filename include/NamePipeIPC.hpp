@@ -132,9 +132,6 @@ class NamedPipeIPC {
             throw std::runtime_error("Failed to read from the named pipe");
         }
 
-        // std::cout << GREEN_TEXT("Read: ") << "\"" GREEN_TEXT(buffer.get())
-        //           << "\" : " << RED_TEXT(_pipeName) << std::endl;
-
         return std::string(buffer.get(), bytesRead);
     }
 
