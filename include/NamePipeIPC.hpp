@@ -135,28 +135,6 @@ class NamedPipeIPC {
         return std::string(buffer.get(), bytesRead);
     }
 
-    bool isDataAvailable(int timeout_ms)
-    {
-        if (_mode != Mode::Read) {
-            throw std::runtime_error("Invalid operation: pipe is not opened for reading.");
-        }
-
-        struct timeval tv;
-        tv.tv_sec = timeout_ms / 1000;
-        tv.tv_usec = (timeout_ms % 1000) * 1000;
-
-        fd_set read_fds;
-        FD_ZERO(&read_fds);
-        FD_SET(_pipeFd, &read_fds);
-
-        int ret = select(_pipeFd + 1, &read_fds, nullptr, nullptr, &tv);
-        if (ret < 0) {
-            throw std::runtime_error("Error in select(): " + std::string(strerror(errno)));
-        }
-
-        return ret > 0 && FD_ISSET(_pipeFd, &read_fds);
-    }
-
   private:
     void openPipe()
     {

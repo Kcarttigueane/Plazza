@@ -13,12 +13,10 @@ Kitchen::Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::st
     : _cooksPerKitchen(cooksPerKitchen),
       _replenishmentTime(replenishmentTime),
       _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
-      //   _updatePipe("update_pipe_" + std::to_string(_kitchenId), NamedPipeIPC::Mode::Write),
       _running(true),
       _stock(replenishmentTime)
 {
     _kitchenId++;
-    _replenishmentThread = std::thread([this]() { replenishStock(); });
 }
 
 Kitchen::~Kitchen()
@@ -60,32 +58,35 @@ std::atomic<bool>& Kitchen::getRunning()
 
 // ! Methods:
 
-void Kitchen::run()
+void Kitchen::initThreads()
 {
-    std::cout << "Kitchen " << _kitchenId << " is running." << std::endl;
-    // for (size_t i = 0; i < _cooksPerKitchen; ++i) {
-    //     _cookThreads.emplace_back([this]() { cook(); });
-    // }
-
-    while (_running) {
-        processOrders();
+    for (size_t i = 0; i < _cooksPerKitchen; ++i) {
+        _cookThreads.emplace_back(&Kitchen::cook, this);
     }
+    _replenishmentThread = std::thread(&Kitchen::replenishStock, this);
 }
 
-void Kitchen::processOrders()
+void Kitchen::run()
 {
-    std::string serialized_order = _orderPipe.read();
-    if (!serialized_order.empty()) {
-        // PizzaOrder order;
-        // std::stringstream ss(serialized_order);
-        // ss >> order;
+    initThreads();
 
-        // std::unique_lock<std::mutex> lock(_orderMutex);
-        // _pizzaOrderQueue.push(order);
+    while (_running) {
+        std::string orderStr = _orderPipe.read();
+        if (!orderStr.empty()) {
 
-        std::cout << "serialized_order: " << serialized_order << std::endl;
-    } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            PizzaOrder order;
+            std::istringstream iss(orderStr);
+            iss >> order;
+
+            std::unique_lock<std::mutex> lock(_orderMutex);
+
+            _pizzaOrderQueue.push(order);
+
+            lock.unlock();
+
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 }
 
@@ -103,24 +104,26 @@ void Kitchen::cook()
 {
     // while (_running) {
     //     PizzaOrder order;
+
     //     {
     //         std::unique_lock<std::mutex> lock(_orderMutex);
-    //         // ! Check if there is any order in the pizza_order_queue
-    //         if (_pizzaOrderQueue.empty()) {
+    //         if (!_pizzaOrderQueue.empty()) {
+    //             order = _pizzaOrderQueue.front();
+    //             _pizzaOrderQueue.pop();
+    //         } else {
     //             lock.unlock();
     //             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     //             continue;
     //         }
-    //         // ! Remove the pizza order from the pizza_order_queue
-    //         order = _pizzaOrderQueue.front();
-    //         _pizzaOrderQueue.pop();
     //     }
 
-    //     // ! Cook the pizza and simulate the cooking time
-    //     std::this_thread::sleep_for(
-    //         std::chrono::milliseconds(static_cast<int>(order.getBakingTime() * 1000)));
+    //     if (_stock.checkAndUpdate(order.getPizzaType())) {
+    //         // Simulate cooking time
+    //         std::this_thread::sleep_for(
+    //             std::chrono::milliseconds(static_cast<int>(order.getCookingTime())));
 
-    //     sendUpdateMessage(order, _kitchenId);
+    //         sendUpdateMessage(order, _kitchenId);
+    //     }
     // }
 }
 
@@ -128,6 +131,6 @@ void Kitchen::replenishStock()
 {
     // while (_running) {
     //     std::this_thread::sleep_for(std::chrono::seconds(_replenishmentTime));
-    //     _stock.replenishStock();
+    //     _stock.replenish();
     // }
 }

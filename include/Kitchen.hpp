@@ -44,9 +44,9 @@ class Kitchen {
 
     // ! Methods:
 
-    void run();
+    void initThreads();
 
-    void processOrders();
+    void run();
 
     void sendUpdateMessage(const PizzaOrder& order, int _kitchenId);
 
