@@ -31,16 +31,40 @@ class Kitchen {
     Ingredients _stock;
 
   public:
-    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName);
+    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName)
+        : _cooksPerKitchen(cooksPerKitchen),
+          _replenishmentTime(replenishmentTime),
+          _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
+          _running(true),
+          _stock(replenishmentTime)
+    {
+        _kitchenId++;
+    }
 
-    ~Kitchen();
+    ~Kitchen()
+    {
+        _running = false;
+
+        for (auto& cook_thread : _cookThreads) {
+            if (cook_thread.joinable()) {
+                cook_thread.join();
+            }
+        }
+
+        if (_replenishmentThread.joinable()) {
+            _replenishmentThread.join();
+        }
+    }
 
     // ! Getters:
 
-    size_t getKitchenID() const;
-    size_t getCooksPerKitchen() const;
-    size_t getReplenishmentTime() const;
-    std::atomic<bool>& getRunning();
+    size_t getKitchenID() const { return _kitchenId; }
+
+    size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
+
+    size_t getReplenishmentTime() const { return _replenishmentTime; }
+
+    std::atomic<bool>& getRunning() { return _running; }
 
     // ! Methods:
 

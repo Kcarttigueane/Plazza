@@ -7,11 +7,21 @@
 
 #pragma once
 
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+#include <sys/msg.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <termios.h>
+#include <unistd.h>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <format>
@@ -23,23 +33,11 @@
 #include <mutex>
 #include <queue>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <unordered_map>
 #include <vector>
-
-#include <fcntl.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <signal.h>
-#include <sys/ipc.h>
-#include <sys/mman.h>
-#include <sys/msg.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <string>
 
 #include "Colors.hpp"
 

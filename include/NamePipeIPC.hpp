@@ -12,18 +12,6 @@
 constexpr size_t BUFFER_SIZE = 1024;
 constexpr char DELIMITER = '\0';
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <cstdio>
-#include <cstring>
-#include <iostream>
-#include <memory>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
 /**
 ** @class NamedPipeIPC
 ** @brief A C++ class for interprocess communication using Named Pipes.
@@ -71,8 +59,6 @@ class NamedPipeIPC {
             std::remove(_pipeName.c_str());
         }
     }
-
-    NamedPipeIPC& operator=(const NamedPipeIPC&) = delete;
 
     // ! Getter:
 

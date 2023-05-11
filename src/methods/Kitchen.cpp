@@ -7,55 +7,6 @@
 
 #include "Kitchen.hpp"
 
-// ! Constructor/Destructor:
-
-Kitchen::Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName)
-    : _cooksPerKitchen(cooksPerKitchen),
-      _replenishmentTime(replenishmentTime),
-      _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
-      _running(true),
-      _stock(replenishmentTime)
-{
-    _kitchenId++;
-}
-
-Kitchen::~Kitchen()
-{
-    _running = false;
-
-    for (auto& cook_thread : _cookThreads) {
-        if (cook_thread.joinable()) {
-            cook_thread.join();
-        }
-    }
-
-    if (_replenishmentThread.joinable()) {
-        _replenishmentThread.join();
-    }
-}
-
-// ! Getters:
-
-size_t Kitchen::getKitchenID() const
-{
-    return _kitchenId;
-}
-
-size_t Kitchen::getCooksPerKitchen() const
-{
-    return _cooksPerKitchen;
-}
-
-size_t Kitchen::getReplenishmentTime() const
-{
-    return _replenishmentTime;
-}
-
-std::atomic<bool>& Kitchen::getRunning()
-{
-    return _running;
-}
-
 // ! Methods:
 
 void Kitchen::initThreads()
@@ -68,22 +19,23 @@ void Kitchen::initThreads()
 
 void Kitchen::run()
 {
-    initThreads();
+    // initThreads();
 
     while (_running) {
         std::string orderStr = _orderPipe.read();
         if (!orderStr.empty()) {
 
-            PizzaOrder order;
-            std::istringstream iss(orderStr);
-            iss >> order;
+            // PizzaOrder order;
+            // std::istringstream iss(orderStr);
+            // iss >> order;
 
-            std::unique_lock<std::mutex> lock(_orderMutex);
+            // std::unique_lock<std::mutex> lock(_orderMutex);
 
-            _pizzaOrderQueue.push(order);
+            // _pizzaOrderQueue.push(order);
 
-            lock.unlock();
+            // lock.unlock();
 
+            std::cout << "Kitchen #" << _kitchenId << " received order: " << orderStr << std::endl;
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }

@@ -23,9 +23,9 @@ int main(int argc, char* argv[])
 
         Reception reception(timeMultiplier, cooksPerKitchen, replenishmentTime);
 
-        Process updatesDisplayHandler([&reception]() { reception.process_updates(); });
+        Process updatesDisplayHandler([&reception]() { reception.processUpdates(); });
 
-        reception.interactive_shell_loop();
+        reception.interactiveShellLoop();
 
         // ! Wait for the child processes to finish
         updatesDisplayHandler.wait();

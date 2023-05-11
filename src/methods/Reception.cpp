@@ -9,7 +9,7 @@
 
 // ! Methods:
 
-void Reception::interactive_shell_loop()
+void Reception::interactiveShellLoop()
 {
     while (true) {
         std::string input;
@@ -21,80 +21,82 @@ void Reception::interactive_shell_loop()
         }
 
         if (input == "status") {
-            send_status_request_to_all_kitchens();
+            sendStatusRequestToAllKitchens();
         }
 
-        parse_pizza_order(input, *this);
+        parsePizzaOrder(input, *this);
     }
 }
 
-void Reception::create_new_kitchen()
+void Reception::createNewKitchen()
 {
-    std::string orderPipeName = "/tmp/order_pipe_0";
+    std::string orderPipeName = "/tmp/order_pipe_" + std::to_string(_kitchenPIDs.size());
+    std::string updatePipeName = "/tmp/update_pipe_" + std::to_string(_kitchenPIDs.size());
 
-    pid_t kitchenPid = fork();
-
-    if (kitchenPid < 0) {
-        std::cerr << "Error creating kitchen process." << std::endl;
-        exit(1);
-    }
-
-    if (kitchenPid == 0) {  // ! Child process
+    Process kitchenProcess([this, &orderPipeName] {
         Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName);
         sleep(1);
-
         kitchen.run();
-    } else {  // ! Parent process
-        std::cout << "pid: " << kitchenPid << std::endl;
-        _kitchenPIDs.push_back(kitchenPid);
-        _orderPipes[kitchenPid] =
-            std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
-    }
+    });
+
+    pid_t kitchenPid = kitchenProcess.getPid();
+
+    std::cout << "pid: " << kitchenPid << std::endl;
+    _kitchenPIDs.push_back(kitchenPid);
+    KitchenInfo kitchenInfo;
+    kitchenInfo.activeOrders = 0;
+    kitchenInfo.lastUpdateTime = std::chrono::steady_clock::now();
+    kitchenInfo.orderPipe =
+        std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
+    // kitchenInfo.updatePipe = NamedPipeIPC(updatePipeName, NamedPipeIPC::Mode::Read);
+    _kitchens[kitchenPid] = std::move(kitchenInfo);
 }
 
-void Reception::close_idle_kitchens() {}
-
-// ? this function logic should change for load balancing
-void Reception::distribute_order(PizzaOrder& order)
+void Reception::distributeOrder(PizzaOrder& order)
 {
     // ! If there are no kitchens, create one:
     if (_kitchenPIDs.empty()) {
-        create_new_kitchen();
+        createNewKitchen();
     }
 
     // ! Find the kitchen with the least number of active orders:
     pid_t selectedPID = _kitchenPIDs.front();
-
-    size_t minActiveOrders = _activeOrdersPerKitchen[selectedPID];
+    size_t minActiveOrders = _kitchens[selectedPID].activeOrders;
 
     for (const pid_t& pid : _kitchenPIDs) {
-        if (_activeOrdersPerKitchen[pid] < minActiveOrders) {
+        if (_kitchens[pid].activeOrders < minActiveOrders) {
             selectedPID = pid;
-            minActiveOrders = _activeOrdersPerKitchen[pid];
+            minActiveOrders = _kitchens[pid].activeOrders;
         }
     }
 
-    // ! Increment the active orders count for the selected kitchen
-    _activeOrdersPerKitchen[selectedPID]++;
+    // ! If the selected kitchen has reached the maximum allowed active orders, create a new one:
+    if (minActiveOrders >= _maxOrdersPerKitchen) {
+        createNewKitchen();
+        selectedPID = _kitchenPIDs.back();
+    }
 
-    // ! Serialize the pizza order and send it to the selected kitchen's message queue
+    // ! Increment the active orders count for the selected kitchen
+    _kitchens[selectedPID].activeOrders++;
+
+    // ! Serialize the pizza order and send it to the selected kitchen's order pipe
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
 
-    getNamedPipeByPid(selectedPID).write(serializedPizzaOrder);
+    _kitchens[selectedPID].orderPipe->write(serializedPizzaOrder);
 }
 
-void Reception::manage_kitchens() {}
+void Reception::closeIdleKitchens() {}
 
-void Reception::send_status_request_to_all_kitchens()
+void Reception::sendStatusRequestToAllKitchens()
 {
-    for (auto& namedPipeEntry : _orderPipes) {
-        namedPipeEntry.second->write("statusRequest");
+    for (auto& namedPipeEntry : _kitchens) {
+        namedPipeEntry.second.orderPipe->write("status");
     }
 }
 
-std::tuple<std::string, int, int, std::string> parse_status_response(
+std::tuple<std::string, int, int, std::string> parseStatusResponse(
     const std::string& statusResponse)
 {
     std::istringstream ss(statusResponse);
@@ -109,8 +111,8 @@ std::tuple<std::string, int, int, std::string> parse_status_response(
     return std::make_tuple(kitchenID, cooksPerKitchen, pizzaOrderQueueLength, stock);
 }
 
-void display_status_response(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
-                             const std::string& ingredientStock)
+void displayStatusResponse(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
+                           const std::string& ingredientStock)
 {
     std::cout << "status" << std::endl;
     std::cout << std::setw(10) << "Kitchen ID"
@@ -122,7 +124,7 @@ void display_status_response(const std::string& kitchenID, int pizzasInProgress,
               << std::endl;
 }
 
-void Reception::process_updates()
+void Reception::processUpdates()
 {
     // ? Get the update string from the message queue or other source of updates : while true ?
     std::string update =
@@ -132,12 +134,12 @@ void Reception::process_updates()
     std::string first_word = update.substr(0, pos);
 
     if (first_word == "statusResponse") {
-        auto statusTuple = parse_status_response(update);
+        auto statusTuple = parseStatusResponse(update);
         std::string kitchenID = std::get<0>(statusTuple);
         int availableCooks = std::get<1>(statusTuple);
         int pizzasInProgress = std::get<2>(statusTuple);
         std::string ingredientStock = std::get<3>(statusTuple);
-        display_status_response(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
+        displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
     } else {
         std::cout << update << std::endl;
         // appendToFile("log.txt", update);
