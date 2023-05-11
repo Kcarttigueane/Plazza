@@ -2,7 +2,7 @@
 ** EPITECH PROJECT, 2022
 ** Plazza
 ** File description:
-** parse_pizza_order.cpp
+** parsePizzaOrder.cpp
 */
 
 #include "IDGenerator.hpp"
@@ -13,8 +13,8 @@
 
 using std::string;
 
-static void serialize_pizza_and_message_queue(Reception& reception,
-                                              std::vector<std::pair<string, string>> pizzaOrders)
+static void serializePizzaAndMessageQueue(Reception& reception,
+                                          std::vector<std::pair<string, string>> pizzaOrders)
 {
     size_t totalPizzasOrdered = pizzaOrders.size();
 
@@ -28,11 +28,11 @@ static void serialize_pizza_and_message_queue(Reception& reception,
         PizzaOrder pizzaOrder(orderId, clientId, totalPizzasOrdered, pizzaOrderIndex, type, size,
                               reception.getTimeMultiplier());
 
-        reception.distribute_order(pizzaOrder);
+        reception.distributeOrder(pizzaOrder);
     }
 }
 
-static bool is_pizza_order_valid(string& type, string& size, int number)
+static bool isPizzaOrderValid(string& type, string& size, int number)
 {
     if (std::find(PIZZAS.begin(), PIZZAS.end(), type) == PIZZAS.end()) {
         std::cerr << "Error: Invalid pizza type" << std::endl;
@@ -51,7 +51,7 @@ static bool is_pizza_order_valid(string& type, string& size, int number)
     return true;
 }
 
-void parse_pizza_order(string& input, Reception& reception)
+void parsePizzaOrder(string& input, Reception& reception)
 {
     std::regex pattern("([a-zA-Z]+) (S|M|L|XL|XXL) x([0-9]+)(;|$)");
     std::smatch matches;
@@ -63,7 +63,7 @@ void parse_pizza_order(string& input, Reception& reception)
         string size = matches[2].str();
         int number = std::stoi(matches[3].str());
 
-        if (!is_pizza_order_valid(type, size, number)) {
+        if (!isPizzaOrderValid(type, size, number)) {
             std::cerr << "Error: Invalid pizza order" << std::endl;
             return;
         }
@@ -75,5 +75,5 @@ void parse_pizza_order(string& input, Reception& reception)
         input = matches.suffix().str();
     }
 
-    serialize_pizza_and_message_queue(reception, pizzaOrders);
+    serializePizzaAndMessageQueue(reception, pizzaOrders);
 }

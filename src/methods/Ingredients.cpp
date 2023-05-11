@@ -35,12 +35,12 @@ std::string Ingredients::getIndividualStock() const
     return stock;
 }
 
-void Ingredients::add_ingredient(const std::string& ingredient, int amount)
+void Ingredients::addIngredient(const std::string& ingredient, int amount)
 {
     _stock[ingredient] += amount;
 }
 
-bool Ingredients::remove_ingredient(const std::string& ingredient, int amount)
+bool Ingredients::removeIngredient(const std::string& ingredient, int amount)
 {
     if (_stock[ingredient] >= amount) {
         _stock[ingredient] -= amount;
@@ -49,12 +49,12 @@ bool Ingredients::remove_ingredient(const std::string& ingredient, int amount)
     return false;
 }
 
-void Ingredients::replenish_stock()
+void Ingredients::replenishStock()
 {
     while (true) {
         sleep(_replenishmentTime);
         for (auto& ingredient : _stock) {
-            add_ingredient(ingredient.first, 1);
+            addIngredient(ingredient.first, 1);
         }
     }
 }

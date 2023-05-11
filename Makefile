@@ -43,6 +43,9 @@ fclean: clean
 	$(RM) $(NAME)
 	$(RM) $(wildcard core*)
 
+tests_run:
+	make -C tests re
+
 re: fclean all
 
 .PHONY: all clean fclean re

@@ -7,57 +7,96 @@
 
 #include "Reception.hpp"
 
-Reception::Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time,
-                     UIManager& uiManager)
-    : _timeMultiplier(multiplier),
-      _cookPerKitchen(cooks_per_kitchen),
-      _replenishmentTime(replenishment_time),
-      _uiManager(uiManager),
-      _updatesMessageQueue("/UpdatesMessageQueue"),
-      _updatesPaused(false)
-{}
+// ! Methods:
 
-// ! Getters:
-
-float Reception::getTimeMultiplier() const
+void Reception::interactiveShellLoop()
 {
-    return _timeMultiplier;
-}
+    while (true) {
+        std::string input;
+        std::cout << "> ";
+        std::getline(std::cin, input);
 
-int Reception::getCooksPerKitchen() const
-{
-    return _cookPerKitchen;
-}
+        if (input == "QUIT") {
+            break;
+        }
 
-int Reception::getReplenishmentTime() const
-{
-    return _replenishmentTime;
-}
+        if (input == "status") {
+            sendStatusRequestToAllKitchens();
+        }
 
-MessageQueueIPC& Reception::getOrderMessageQueueByPid(pid_t pid)
-{
-    auto it = _orderMessageQueues.find(pid);
-
-    if (it == _orderMessageQueues.end()) {
-        throw std::runtime_error("No order message queue found for PID " + std::to_string(pid));
-    } else {
-        return it->second;
+        parsePizzaOrder(input, *this);
     }
 }
 
-MessageQueueIPC& Reception::getUpdateMessageQueue()
+void Reception::createNewKitchen()
 {
-    return _updatesMessageQueue;
+    std::string orderPipeName = "/tmp/order_pipe_" + std::to_string(_kitchenPIDs.size());
+    std::string updatePipeName = "/tmp/update_pipe_" + std::to_string(_kitchenPIDs.size());
+
+    Process kitchenProcess([this, &orderPipeName] {
+        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName);
+        sleep(1);
+        kitchen.run();
+    });
+
+    pid_t kitchenPid = kitchenProcess.getPid();
+
+    std::cout << "pid: " << kitchenPid << std::endl;
+    _kitchenPIDs.push_back(kitchenPid);
+    KitchenInfo kitchenInfo;
+    kitchenInfo.activeOrders = 0;
+    kitchenInfo.lastUpdateTime = std::chrono::steady_clock::now();
+    kitchenInfo.orderPipe =
+        std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
+    // kitchenInfo.updatePipe = NamedPipeIPC(updatePipeName, NamedPipeIPC::Mode::Read);
+    _kitchens[kitchenPid] = std::move(kitchenInfo);
 }
 
-UIManager& Reception::getUIManager()
+void Reception::distributeOrder(PizzaOrder& order)
 {
-    return _uiManager;
+    // ! If there are no kitchens, create one:
+    if (_kitchenPIDs.empty()) {
+        createNewKitchen();
+    }
+
+    // ! Find the kitchen with the least number of active orders:
+    pid_t selectedPID = _kitchenPIDs.front();
+    size_t minActiveOrders = _kitchens[selectedPID].activeOrders;
+
+    for (const pid_t& pid : _kitchenPIDs) {
+        if (_kitchens[pid].activeOrders < minActiveOrders) {
+            selectedPID = pid;
+            minActiveOrders = _kitchens[pid].activeOrders;
+        }
+    }
+
+    // ! If the selected kitchen has reached the maximum allowed active orders, create a new one:
+    if (minActiveOrders >= _maxOrdersPerKitchen) {
+        createNewKitchen();
+        selectedPID = _kitchenPIDs.back();
+    }
+
+    // ! Increment the active orders count for the selected kitchen
+    _kitchens[selectedPID].activeOrders++;
+
+    // ! Serialize the pizza order and send it to the selected kitchen's order pipe
+    std::ostringstream oss;
+    oss << order;
+    std::string serializedPizzaOrder = oss.str();
+
+    _kitchens[selectedPID].orderPipe->write(serializedPizzaOrder);
 }
 
-// ! Methods:
+void Reception::closeIdleKitchens() {}
 
-std::tuple<std::string, int, int, std::string> parse_status_response(
+void Reception::sendStatusRequestToAllKitchens()
+{
+    for (auto& namedPipeEntry : _kitchens) {
+        namedPipeEntry.second.orderPipe->write("status");
+    }
+}
+
+std::tuple<std::string, int, int, std::string> parseStatusResponse(
     const std::string& statusResponse)
 {
     std::istringstream ss(statusResponse);
@@ -72,8 +111,8 @@ std::tuple<std::string, int, int, std::string> parse_status_response(
     return std::make_tuple(kitchenID, cooksPerKitchen, pizzaOrderQueueLength, stock);
 }
 
-void display_status_response(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
-                             const std::string& ingredientStock)
+void displayStatusResponse(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
+                           const std::string& ingredientStock)
 {
     std::cout << "status" << std::endl;
     std::cout << std::setw(10) << "Kitchen ID"
@@ -85,31 +124,7 @@ void display_status_response(const std::string& kitchenID, int pizzasInProgress,
               << std::endl;
 }
 
-void Reception::interactive_shell_loop()
-{
-    while (true) {
-        std::string input = _uiManager.get_user_input();
-
-        if (input == "QUIT") {
-            break;
-        }
-
-        if (input == "status") {
-            send_status_request_to_all_kitchens();
-        }
-
-        parse_pizza_order(input, *this);
-    }
-}
-
-void Reception::send_status_request_to_all_kitchens()
-{
-    for (auto& orderMessageQueueEntry : _orderMessageQueues) {
-        orderMessageQueueEntry.second.send("statusRequest");
-    }
-}
-
-void Reception::process_updates()
+void Reception::processUpdates()
 {
     // ? Get the update string from the message queue or other source of updates : while true ?
     std::string update =
@@ -119,68 +134,14 @@ void Reception::process_updates()
     std::string first_word = update.substr(0, pos);
 
     if (first_word == "statusResponse") {
-        auto statusTuple = parse_status_response(update);
+        auto statusTuple = parseStatusResponse(update);
         std::string kitchenID = std::get<0>(statusTuple);
         int availableCooks = std::get<1>(statusTuple);
         int pizzasInProgress = std::get<2>(statusTuple);
         std::string ingredientStock = std::get<3>(statusTuple);
-        display_status_response(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
-        _uiManager.display_update(update);
+        displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
     } else {
-        _uiManager.display_update(update);
-        appendToFile("log.txt", update);
+        std::cout << update << std::endl;
+        // appendToFile("log.txt", update);
     }
 }
-
-void Reception::create_new_kitchen()
-{
-    // Process process([this]() {
-    //     Kitchen kitchen(_cookPerKitchen, _replenishmentTime,
-    //                     "/OrderMessageQueue_" + std::to_string(getpid()), "/UpdatesMessageQueue");
-    //     kitchen.run();
-    // });
-
-    // pid_t new_pid = process.getPid();
-    // _kitchenPIDs.push_back(new_pid);
-
-    // // ! Create a new Order Message Queue for the new kitchen process
-    // _orderMessageQueues[new_pid] =
-    //     MessageQueueIPC("/OrderMessageQueue_" + std::to_string(new_pid), true);
-}
-
-void Reception::close_idle_kitchens() {}
-
-// ? this function logic should change for load balancing
-void Reception::distribute_order(PizzaOrder& order)
-{
-    // ! If there are no kitchens, create one:
-    if (_kitchenPIDs.empty()) {
-        create_new_kitchen();
-    }
-
-    // ! Find the kitchen with the least number of active orders:
-    pid_t selectedPID = _kitchenPIDs.front();
-    size_t minActiveOrders = _activeOrdersPerKitchen[selectedPID];
-
-    for (const pid_t& pid : _kitchenPIDs) {
-        if (_activeOrdersPerKitchen[pid] < minActiveOrders) {
-            selectedPID = pid;
-            minActiveOrders = _activeOrdersPerKitchen[pid];
-        }
-    }
-
-    // ! Increment the active orders count for the selected kitchen
-    _activeOrdersPerKitchen[selectedPID]++;
-
-    // ! Serialize the pizza order and send it to the selected kitchen's message queue
-    // std::ostringstream oss;
-    // oss << pizzaOrder;
-    // string serializedPizzaOrder = oss.str();
-
-    std::stringstream serialized_order;
-    serialized_order << order;
-
-    getOrderMessageQueueByPid(selectedPID).send(serialized_order.str());
-}
-
-void Reception::manage_kitchens() {}

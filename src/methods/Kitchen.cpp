@@ -7,105 +7,38 @@
 
 #include "Kitchen.hpp"
 
-Kitchen::Kitchen(size_t cooksPerKitchen, size_t replenishmentTime,
-                 const std::string& orderMessageQueueName,
-                 const std::string& updatesMessageQueueName)
-    : _cooksPerKitchen(cooksPerKitchen),
-      _replenishmentTime(replenishmentTime),
-      _orderMessageQueue(orderMessageQueueName, true),
-      _updatesMessageQueue(updatesMessageQueueName, false),
-      _running(true),
-      _stock(replenishmentTime)
-{
-    static size_t kitchenId = 0;
-    _kitchenId = kitchenId++;
-}
+// ! Methods:
 
-Kitchen::~Kitchen()
+void Kitchen::initThreads()
 {
-    _running = false;
-
-    for (auto& cook_thread : _cookThreads) {
-        if (cook_thread.joinable()) {
-            cook_thread.join();
-        }
+    for (size_t i = 0; i < _cooksPerKitchen; ++i) {
+        _cookThreads.emplace_back(&Kitchen::cook, this);
     }
-}
-
-size_t Kitchen::get_kitchen_id() const
-{
-    return _kitchenId;
-}
-
-size_t Kitchen::get_cooks_per_kitchen() const
-{
-    return _cooksPerKitchen;
-}
-
-size_t Kitchen::get_replenishment_time() const
-{
-    return _replenishmentTime;
-}
-
-MessageQueueIPC& Kitchen::get_order_message_queue()
-{
-    return _orderMessageQueue;
-}
-
-MessageQueueIPC& Kitchen::get_updates_message_queue()
-{
-    return _updatesMessageQueue;
-}
-
-std::atomic<bool>& Kitchen::get_running()
-{
-    return _running;
-}
-
-size_t Kitchen::getPizzaOrderQueueLength() const
-{
-    return _pizzaOrderQueue.size();
+    _replenishmentThread = std::thread(&Kitchen::replenishStock, this);
 }
 
 void Kitchen::run()
 {
-    for (size_t i = 0; i < _cooksPerKitchen; ++i) {
-        _cookThreads.emplace_back([this]() { cook(); });
-    }
+    // initThreads();
 
     while (_running) {
-        process_orders();
-    }
-}
+        std::string orderStr = _orderPipe.read();
+        if (!orderStr.empty()) {
 
-void Kitchen::process_orders()
-{
-    std::string serialized_order;
+            // PizzaOrder order;
+            // std::istringstream iss(orderStr);
+            // iss >> order;
 
-    try {
-        serialized_order = _orderMessageQueue.receive();
+            // std::unique_lock<std::mutex> lock(_orderMutex);
 
-        if (serialized_order == "StatusRequest") {
-            std::stringstream ss;
-            ss << "StatusResponse: " << _kitchenId << " " << _cooksPerKitchen << " "
-               << getPizzaOrderQueueLength() << " " << _stock.getIndividualStock();
+            // _pizzaOrderQueue.push(order);
 
-            _updatesMessageQueue.send(ss.str());
-            return;
+            // lock.unlock();
+
+            std::cout << "Kitchen #" << _kitchenId << " received order: " << orderStr << std::endl;
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-
-        PizzaOrder order;
-        std::stringstream ss(serialized_order);
-        ss >> order;
-
-        std::unique_lock<std::mutex> lock(_orderMutex);
-
-        _pizzaOrderQueue.push(order);
-
-        lock.unlock();
-
-    } catch (const std::runtime_error& e) {
-        // ! Handle the exception, e.g. log it or ignore it
     }
 }
 
@@ -116,30 +49,40 @@ void Kitchen::sendUpdateMessage(const PizzaOrder& order, int _kitchenId)
         getCurrentTimeString(), order.getOrderId(), order.getPizzaOrderIndex(),
         order.getTotalPizzasOrdered(), order.getTypeString(), order.getSizeString(), _kitchenId);
 
-    _updatesMessageQueue.send(msg);
+    // _updatePipe.write(msg);
 }
 
 void Kitchen::cook()
 {
-    while (_running) {
-        PizzaOrder order;
-        {
-            std::unique_lock<std::mutex> lock(_orderMutex);
-            // ! Check if there is any order in the pizza_order_queue
-            if (_pizzaOrderQueue.empty()) {
-                lock.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                continue;
-            }
-            // ! Remove the pizza order from the pizza_order_queue
-            order = _pizzaOrderQueue.front();
-            _pizzaOrderQueue.pop();
-        }
+    // while (_running) {
+    //     PizzaOrder order;
 
-        // ! Cook the pizza and simulate the cooking time
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(static_cast<int>(order.getBakingTime() * 1000)));
+    //     {
+    //         std::unique_lock<std::mutex> lock(_orderMutex);
+    //         if (!_pizzaOrderQueue.empty()) {
+    //             order = _pizzaOrderQueue.front();
+    //             _pizzaOrderQueue.pop();
+    //         } else {
+    //             lock.unlock();
+    //             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    //             continue;
+    //         }
+    //     }
 
-        sendUpdateMessage(order, _kitchenId);
-    }
+    //     if (_stock.checkAndUpdate(order.getPizzaType())) {
+    //         // Simulate cooking time
+    //         std::this_thread::sleep_for(
+    //             std::chrono::milliseconds(static_cast<int>(order.getCookingTime())));
+
+    //         sendUpdateMessage(order, _kitchenId);
+    //     }
+    // }
+}
+
+void Kitchen::replenishStock()
+{
+    // while (_running) {
+    //     std::this_thread::sleep_for(std::chrono::seconds(_replenishmentTime));
+    //     _stock.replenish();
+    // }
 }

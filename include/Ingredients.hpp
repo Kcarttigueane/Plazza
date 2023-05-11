@@ -19,7 +19,7 @@ class Ingredients {
     void initialize_stock();
 
   public:
-    Ingredients(int replenishment_time);
+    Ingredients(int replenishmentTime);
 
     virtual ~Ingredients(){};
 
@@ -27,11 +27,11 @@ class Ingredients {
     std::string getIndividualStock() const;
 
     // ! Add a specific amount of an ingredient to the stock
-    void add_ingredient(const std::string& ingredient, int amount);
+    void addIngredient(const std::string& ingredient, int amount);
 
     // ! Remove a specific amount of an ingredient from the stock
-    bool remove_ingredient(const std::string& ingredient, int amount);
+    bool removeIngredient(const std::string& ingredient, int amount);
 
     // ! Replenish the stock every N seconds
-    void replenish_stock();
+    void replenishStock();
 };

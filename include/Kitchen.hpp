@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Ingredients.hpp"
-#include "MessageQueueIPC.hpp"
+#include "NamePipeIPC.hpp"
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 
@@ -18,39 +18,63 @@ class Kitchen {
     size_t _cooksPerKitchen;
     size_t _replenishmentTime;
 
-    MessageQueueIPC _orderMessageQueue;
-    MessageQueueIPC _updatesMessageQueue;
+    NamedPipeIPC _orderPipe;
+    // NamedPipeIPC _updatePipe;
 
     std::atomic<bool> _running;
     std::vector<std::thread> _cookThreads;
     std::mutex _orderMutex;
     std::queue<PizzaOrder> _pizzaOrderQueue;
 
+    std::thread _replenishmentThread;
+
     Ingredients _stock;
 
   public:
-    Kitchen(size_t cooks_per_kitchen, size_t replenishment_time,
-            const std::string& order_queue_name, const std::string& updates_queue_name);
+    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName)
+        : _cooksPerKitchen(cooksPerKitchen),
+          _replenishmentTime(replenishmentTime),
+          _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
+          _running(true),
+          _stock(replenishmentTime)
+    {
+        _kitchenId++;
+    }
 
-    ~Kitchen();
+    ~Kitchen()
+    {
+        _running = false;
+
+        for (auto& cook_thread : _cookThreads) {
+            if (cook_thread.joinable()) {
+                cook_thread.join();
+            }
+        }
+
+        if (_replenishmentThread.joinable()) {
+            _replenishmentThread.join();
+        }
+    }
 
     // ! Getters:
 
-    size_t get_kitchen_id() const;
-    size_t get_cooks_per_kitchen() const;
-    size_t get_replenishment_time() const;
-    MessageQueueIPC& get_order_message_queue();
-    MessageQueueIPC& get_updates_message_queue();
-    std::atomic<bool>& get_running();
-    size_t getPizzaOrderQueueLength() const;
+    size_t getKitchenID() const { return _kitchenId; }
+
+    size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
+
+    size_t getReplenishmentTime() const { return _replenishmentTime; }
+
+    std::atomic<bool>& getRunning() { return _running; }
 
     // ! Methods:
 
-    void run();
+    void initThreads();
 
-    void process_orders();
+    void run();
 
     void sendUpdateMessage(const PizzaOrder& order, int _kitchenId);
 
     void cook();
+
+    void replenishStock();
 };

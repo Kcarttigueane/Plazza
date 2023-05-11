@@ -8,63 +8,74 @@
 #pragma once
 
 #include "Kitchen.hpp"
-#include "MessageQueueIPC.hpp"
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 #include "Process.hpp"
 #include "UIManager.hpp"
+
+struct KitchenInfo {
+    size_t activeOrders;
+    std::chrono::steady_clock::time_point lastUpdateTime;
+    std::unique_ptr<NamedPipeIPC> orderPipe;
+    // NamedPipeIPC updatePipe;
+};
 
 class Reception {
   private:
     float _timeMultiplier;
     size_t _cookPerKitchen;
     size_t _replenishmentTime;
+    size_t _maxOrdersPerKitchen;
 
-    UIManager& _uiManager;
-
-    // ! Message Queue for sending pizza orders to Kitchen processes
-
-    std::unordered_map<pid_t, MessageQueueIPC> _orderMessageQueues;
-    std::unordered_map<pid_t, size_t> _activeOrdersPerKitchen;
-
-    // ! Updates Message Queue for receiving updates from Kitchen processes
-    MessageQueueIPC _updatesMessageQueue;
-
-    // ! Add other necessary members for managing updates
-
-    std::mutex _updateMutex;
-    std::condition_variable _updatesCV;
-    bool _updatesPaused;
-
-    // ! Kitchen processes
+    // UIManager& _uiManager;
 
     std::vector<pid_t> _kitchenPIDs;
-    std::map<pid_t, std::chrono::steady_clock::time_point> _kitchenLastUpdateTimes;
+    std::map<pid_t, KitchenInfo> _kitchens;
 
   public:
-    Reception(int multiplier, size_t cooks_per_kitchen, size_t replenishment_time,
-              UIManager& uiManager);
+    Reception(int multiplier, size_t cooksPerKitchen, size_t replenishmentTime)
+        : _timeMultiplier(multiplier),
+          _cookPerKitchen(cooksPerKitchen),
+          _replenishmentTime(replenishmentTime),
+          _maxOrdersPerKitchen(2 * cooksPerKitchen)
+    {}
 
-    virtual ~Reception(){};
+    ~Reception()
+    {
+        for (const auto& pid : _kitchenPIDs) {
+            kill(pid, SIGTERM);
+            int status;
+            waitpid(pid, &status, 0);
+        }
+    }
 
     // ! Getters:
 
-    float getTimeMultiplier() const;
-    int getCooksPerKitchen() const;
-    int getReplenishmentTime() const;
-    MessageQueueIPC& getOrderMessageQueueByPid(pid_t pid);
-    MessageQueueIPC& getUpdateMessageQueue();
-    UIManager& getUIManager();
+    float getTimeMultiplier() const { return _timeMultiplier; }
+
+    int getCooksPerKitchen() const { return _cookPerKitchen; }
+
+    int getReplenishmentTime() const { return _replenishmentTime; }
+
+    NamedPipeIPC& getNamedPipeByPid(pid_t pid)
+    {
+        auto it = _kitchens.find(pid);
+
+        if (it == _kitchens.end()) {
+            throw std::runtime_error("No kitchen with pid " + std::to_string(pid));
+        } else {
+            return *it->second.orderPipe;
+        }
+    }
 
     // ! Methods
 
-    void interactive_shell_loop();
-    void send_status_request_to_all_kitchens();
-    void process_updates();
-    void create_new_kitchen();
-    void close_idle_kitchens();
-    void distribute_order(PizzaOrder& order);
-    void manage_kitchens();
+    void interactiveShellLoop();
+    void sendStatusRequestToAllKitchens();
+    void processUpdates();
+    void createNewKitchen();
+    void closeIdleKitchens();
+    void distributeOrder(PizzaOrder& order);
 };
 
-void parse_pizza_order(std::string& input, Reception& reception);
+void parsePizzaOrder(std::string& input, Reception& reception);
