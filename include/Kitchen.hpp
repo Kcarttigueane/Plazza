@@ -19,7 +19,7 @@ class Kitchen {
     size_t _replenishmentTime;
 
     NamedPipeIPC _orderPipe;
-    // NamedPipeIPC _updatePipe;
+    NamedPipeIPC _updatePipe;
 
     std::atomic<bool> _running;
     std::vector<std::thread> _cookThreads;
@@ -31,10 +31,12 @@ class Kitchen {
     Ingredients _stock;
 
   public:
-    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName)
+    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
+            const std::string& updatePipeName)
         : _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
           _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
+          _updatePipe(updatePipeName, NamedPipeIPC::Mode::Write),
           _running(true),
           _stock(replenishmentTime)
     {

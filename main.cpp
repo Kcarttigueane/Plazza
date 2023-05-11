@@ -9,7 +9,6 @@
 #include "./include/Plazza.hpp"
 #include "./include/Process.hpp"
 #include "./include/Reception.hpp"
-#include "./include/UIManager.hpp"
 
 size_t IDGenerator::currentID = 0;
 
@@ -23,12 +22,11 @@ int main(int argc, char* argv[])
 
         Reception reception(timeMultiplier, cooksPerKitchen, replenishmentTime);
 
-        Process updatesDisplayHandler([&reception]() { reception.processUpdates(); });
+        std::thread updatesDisplayThread([&reception]() { reception.processUpdates(); });
 
         reception.interactiveShellLoop();
 
-        // ! Wait for the child processes to finish
-        updatesDisplayHandler.wait();
+        updatesDisplayThread.join();
 
     } catch (const std::invalid_argument& e) {
         std::cerr << "Error: " << e.what() << std::endl;

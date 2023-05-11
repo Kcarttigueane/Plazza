@@ -33,8 +33,8 @@ void Reception::createNewKitchen()
     std::string orderPipeName = "/tmp/order_pipe_" + std::to_string(_kitchenPIDs.size());
     std::string updatePipeName = "/tmp/update_pipe_" + std::to_string(_kitchenPIDs.size());
 
-    Process kitchenProcess([this, &orderPipeName] {
-        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName);
+    Process kitchenProcess([this, &orderPipeName, &updatePipeName] {
+        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName);
         sleep(1);
         kitchen.run();
     });
@@ -48,7 +48,8 @@ void Reception::createNewKitchen()
     kitchenInfo.lastUpdateTime = std::chrono::steady_clock::now();
     kitchenInfo.orderPipe =
         std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
-    // kitchenInfo.updatePipe = NamedPipeIPC(updatePipeName, NamedPipeIPC::Mode::Read);
+    kitchenInfo.updatePipe =
+        std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Read);
     _kitchens[kitchenPid] = std::move(kitchenInfo);
 }
 
@@ -126,22 +127,35 @@ void displayStatusResponse(const std::string& kitchenID, int pizzasInProgress, i
 
 void Reception::processUpdates()
 {
-    // ? Get the update string from the message queue or other source of updates : while true ?
-    std::string update =
-        "PizzaOrderResponse: #124 (1/7) completed: Margarita(L) prepared by Kitchen #2";
+    while (true) {
+        for (const auto& [pid, kitchenInfo] : _kitchens) {
+            // Check if there's a message in the named pipe for the current kitchen
+            // std::cout << "La vie est belle" << std::endl;
+            // std::cout << "Pid: " << pid << std::endl;
+            // std::cout << "named pipe: " << kitchenInfo.updatePipe->getPipeName() << std::endl;
+            if (kitchenInfo.updatePipe->getMode() == NamedPipeIPC::Mode::Read) {
+                // std::cout << "Pipe not empty" << std::endl;
+                continue;
+            }
+            std::string update = kitchenInfo.orderPipe->read();
+            if (!update.empty()) {
+                size_t pos = update.find(":");
+                std::string first_word = update.substr(0, pos);
 
-    size_t pos = update.find(":");
-    std::string first_word = update.substr(0, pos);
-
-    if (first_word == "statusResponse") {
-        auto statusTuple = parseStatusResponse(update);
-        std::string kitchenID = std::get<0>(statusTuple);
-        int availableCooks = std::get<1>(statusTuple);
-        int pizzasInProgress = std::get<2>(statusTuple);
-        std::string ingredientStock = std::get<3>(statusTuple);
-        displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
-    } else {
-        std::cout << update << std::endl;
-        // appendToFile("log.txt", update);
+                if (first_word == "statusResponse") {
+                    auto statusTuple = parseStatusResponse(update);
+                    std::string kitchenID = std::get<0>(statusTuple);
+                    int availableCooks = std::get<1>(statusTuple);
+                    int pizzasInProgress = std::get<2>(statusTuple);
+                    std::string ingredientStock = std::get<3>(statusTuple);
+                    displayStatusResponse(kitchenID, pizzasInProgress, availableCooks,
+                                          ingredientStock);
+                } else {
+                    std::cout << update << std::endl;
+                    // appendToFile("log.txt", update);
+                }
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Add a short sleep duration
     }
 }

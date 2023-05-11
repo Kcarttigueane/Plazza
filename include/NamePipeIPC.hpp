@@ -66,6 +66,8 @@ class NamedPipeIPC {
 
     int getPipeFd() const { return _pipeFd; }
 
+    Mode getMode() const { return _mode; }
+
     // ! Methods
 
     /**

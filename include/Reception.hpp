@@ -11,13 +11,12 @@
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 #include "Process.hpp"
-#include "UIManager.hpp"
 
 struct KitchenInfo {
     size_t activeOrders;
     std::chrono::steady_clock::time_point lastUpdateTime;
     std::unique_ptr<NamedPipeIPC> orderPipe;
-    // NamedPipeIPC updatePipe;
+    std::unique_ptr<NamedPipeIPC> updatePipe;
 };
 
 class Reception {
@@ -26,8 +25,6 @@ class Reception {
     size_t _cookPerKitchen;
     size_t _replenishmentTime;
     size_t _maxOrdersPerKitchen;
-
-    // UIManager& _uiManager;
 
     std::vector<pid_t> _kitchenPIDs;
     std::map<pid_t, KitchenInfo> _kitchens;
@@ -56,6 +53,8 @@ class Reception {
     int getCooksPerKitchen() const { return _cookPerKitchen; }
 
     int getReplenishmentTime() const { return _replenishmentTime; }
+
+    size_t getMaxOrdersPerKitchen() const { return _maxOrdersPerKitchen; }
 
     NamedPipeIPC& getNamedPipeByPid(pid_t pid)
     {
