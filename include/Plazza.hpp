@@ -34,6 +34,7 @@
 #include <queue>
 #include <sstream>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <thread>
 #include <unordered_map>

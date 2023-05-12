@@ -18,15 +18,12 @@ class Kitchen {
     size_t _cooksPerKitchen;
     size_t _replenishmentTime;
 
-    NamedPipeIPC _orderPipe;
-    NamedPipeIPC _updatePipe;
+    std::unique_ptr<NamedPipeIPC> _orderPipe;
+    std::unique_ptr<NamedPipeIPC> _updatePipe;
 
     std::atomic<bool> _running;
-    std::vector<std::thread> _cookThreads;
-    std::mutex _orderMutex;
-    std::queue<PizzaOrder> _pizzaOrderQueue;
 
-    std::thread _replenishmentThread;
+    std::jthread _replenishmentThread;
 
     Ingredients _stock;
 
@@ -35,8 +32,8 @@ class Kitchen {
             const std::string& updatePipeName)
         : _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
-          _orderPipe(orderPipeName, NamedPipeIPC::Mode::Read),
-          _updatePipe(updatePipeName, NamedPipeIPC::Mode::Write),
+          _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
+          _updatePipe(std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Write)),
           _running(true),
           _stock(replenishmentTime)
     {

@@ -112,15 +112,19 @@ class NamedPipeIPC {
             throw std::runtime_error("NamedPipeIPC is not in read mode");
         }
 
-        std::unique_ptr<char[]> buffer(new char[_bufferSize]);
+        std::unique_ptr<char[]> buffer(new char[_bufferSize]());
+        std::ostringstream message;
 
-        ssize_t bytesRead = ::read(_pipeFd, buffer.get(), _bufferSize);
-
-        if (bytesRead < 0) {
-            throw std::runtime_error("Failed to read from the named pipe");
+        char ch;
+        while (::read(_pipeFd, &ch, 1) > 0 && ch != DELIMITER) {
+            message << ch;
         }
 
-        return std::string(buffer.get(), bytesRead);
+        if (ch != DELIMITER) {
+            throw std::runtime_error("Failed to read the complete message from the named pipe");
+        }
+
+        return message.str();
     }
 
   private:
@@ -138,9 +142,9 @@ class NamedPipeIPC {
 
     void closePipe()
     {
-        if (_pipeFd != -1) {
+        if (_pipeFd != FAILURE) {
             close(_pipeFd);
-            _pipeFd = -1;
+            _pipeFd = FAILURE;
         }
     }
 

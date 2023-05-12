@@ -16,17 +16,19 @@ int main(int argc, char* argv[])
 {
     float timeMultiplier;
     size_t cooksPerKitchen, replenishmentTime;
+    std::atomic_bool stopThread(false);
 
     try {
         get_program_arguments(argc, argv, timeMultiplier, cooksPerKitchen, replenishmentTime);
 
-        Reception reception(timeMultiplier, cooksPerKitchen, replenishmentTime);
+        Reception reception(timeMultiplier, cooksPerKitchen, replenishmentTime, 5);
 
-        std::thread updatesDisplayThread([&reception]() { reception.processUpdates(); });
+        std::jthread updatesDisplayThread(
+            [&reception, &stopThread]() { reception.processUpdates(stopThread); });
 
         reception.interactiveShellLoop();
 
-        updatesDisplayThread.join();
+        stopThread = true;
 
     } catch (const std::invalid_argument& e) {
         std::cerr << "Error: " << e.what() << std::endl;
