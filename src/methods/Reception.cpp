@@ -155,7 +155,7 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 // displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
             } else {
                 std::cout << update << std::endl;
-                // appendToFile("log.txt", update);
+                appendToFile("log.txt", update);
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Add a short sleep duration

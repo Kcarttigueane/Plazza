@@ -44,15 +44,15 @@ class Kitchen {
     {
         _running = false;
 
-        for (auto& cook_thread : _cookThreads) {
-            if (cook_thread.joinable()) {
-                cook_thread.join();
-            }
-        }
+        // for (auto& cook_thread : _cookThreads) {
+        //     if (cook_thread.joinable()) {
+        //         cook_thread.join();
+        //     }
+        // }
 
-        if (_replenishmentThread.joinable()) {
-            _replenishmentThread.join();
-        }
+        // if (_replenishmentThread.joinable()) {
+        //     _replenishmentThread.join();
+        // }
     }
 
     // ! Getters:

@@ -9,13 +9,13 @@
 
 // ! Methods:
 
-void Kitchen::initThreads()
-{
-    for (size_t i = 0; i < _cooksPerKitchen; ++i) {
-        _cookThreads.emplace_back(&Kitchen::cook, this);
-    }
-    _replenishmentThread = std::thread(&Kitchen::replenishStock, this);
-}
+// void Kitchen::initThreads()
+// {
+//     for (size_t i = 0; i < _cooksPerKitchen; ++i) {
+//         _cookThreads.emplace_back(&Kitchen::cook, this);
+//     }
+//     _replenishmentThread = std::thread(&Kitchen::replenishStock, this);
+// }
 
 void Kitchen::run()
 {
