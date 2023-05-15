@@ -5,7 +5,6 @@
 ** parsePizzaOrder.cpp
 */
 
-#include "IDGenerator.hpp"
 #include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 #include "Reception.hpp"

@@ -9,7 +9,7 @@
 
 #include "Plazza.hpp"
 
-constexpr size_t BUFFER_SIZE = 1024;
+constexpr size_t BUFFER_SIZE = 256;
 constexpr char DELIMITER = '\0';
 
 /**
@@ -87,8 +87,8 @@ class NamedPipeIPC {
 
         ssize_t bytesWritten = ::write(_pipeFd, message.c_str(), message.size());
 
-        std::cout << GREEN_TEXT("write: ") << "\"" GREEN_TEXT(message)
-                  << "\" : " << RED_TEXT(_pipeName) << std::endl;
+        std::cout << BLUE_TEXT("[WRITE]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message)
+                  << "\" : " << std::endl;
 
         if (bytesWritten != static_cast<ssize_t>(message.size())) {
             throw std::runtime_error("Failed to write the complete message to the named pipe");
@@ -120,6 +120,8 @@ class NamedPipeIPC {
             message << ch;
         }
 
+        std::cout << BLUE_TEXT("[READ]: ") << RED_TEXT(_pipeName)
+                  << " : \"" GREEN_TEXT(message.str()) << "\" : " << std::endl;
         if (ch != DELIMITER) {
             throw std::runtime_error("Failed to read the complete message from the named pipe");
         }
@@ -133,7 +135,7 @@ class NamedPipeIPC {
         int flags = (_mode == Mode::Read) ? O_RDONLY : O_WRONLY;
         _pipeFd = open(_pipeName.c_str(), flags);
 
-        std::cout << BLUE_TEXT("Open: ") << RED_TEXT(_pipeName) << std::endl;
+        std::cout << BLUE_TEXT("[OPEN]: ") << RED_TEXT(_pipeName) << std::endl;
 
         if (_pipeFd < 0) {
             throw std::runtime_error("Failed to open the named pipe");

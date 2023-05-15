@@ -44,6 +44,8 @@
 
 #define USAGE "USAGE: ./plazza [multiplier] [cooks_per_kitchen] [time]\n"
 
+#define PROMPT "➜ "
+
 enum ErrorCodes {
     SUCCESS = 0,
     FAILURE = -1,

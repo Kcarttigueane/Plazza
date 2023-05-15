@@ -35,7 +35,6 @@ void Kitchen::run()
 
             // lock.unlock();
 
-            std::cout << "Kitchen #" << _kitchenId << " received order: " << orderStr << std::endl;
             sendUpdateMessage(order, _kitchenId);
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -46,10 +45,11 @@ void Kitchen::run()
 void Kitchen::sendUpdateMessage(const PizzaOrder& order, int _kitchenId)
 {
     std::string msg = std::format(
-        "PizzaOrderResponse: [{}] Order #{}({}/{}) completed: {} ({}) prepared by Kitchen #{}!",
+        "PizzaOrderResponse: [{}] Order #{} ({}/{}) completed:{} ({}) prepared by Kitchen #{}!",
         getCurrentTimeString(), order.getOrderId(), order.getPizzaOrderIndex(),
         order.getTotalPizzasOrdered(), order.getTypeString(), order.getSizeString(), _kitchenId);
 
+    std::cout << YELLOW_TEXT(msg) << std::endl;
     _updatePipe->write(msg);
 }
 

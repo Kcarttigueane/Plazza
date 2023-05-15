@@ -7,13 +7,11 @@
 
 #include "Reception.hpp"
 
-// ! Methods:
-
 void Reception::interactiveShellLoop()
 {
     while (true) {
         std::string input;
-        std::cout << "> ";
+        std::cout << PROMPT;
         std::getline(std::cin, input);
 
         if (input == "QUIT") {
@@ -54,7 +52,7 @@ void Reception::createNewKitchen()
 
 void Reception::distributeOrder(PizzaOrder& order)
 {
-    pid_t targetKitchenPID = -1;
+    pid_t targetKitchenPID = FAILURE;
     float minLoad = std::numeric_limits<float>::max();
 
     for (const auto& [kitchenPID, kitchenInfo] : _kitchens) {
@@ -154,7 +152,7 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 int pizzasInProgress = std::get<2>(statusTuple);
                 // displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
             } else {
-                std::cout << update << std::endl;
+                std::cout << MAGENTA_TEXT(update) << std::endl;
                 appendToFile("log.txt", update);
             }
         }

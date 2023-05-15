@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "IDGenerator.hpp"
 #include "Ingredients.hpp"
 #include "NamePipeIPC.hpp"
 #include "PizzaOrder.hpp"
@@ -37,7 +38,7 @@ class Kitchen {
           _running(true),
           _stock(replenishmentTime)
     {
-        _kitchenId++;
+        _kitchenId = IDGenerator::generateID();
     }
 
     ~Kitchen()

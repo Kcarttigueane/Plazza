@@ -23,7 +23,7 @@ SRCS = 	$(wildcard $(SRCDIR)/methods/*.cpp) \
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(OBJS:.o=.d)
 
-CXXFLAGS += -lrt -lpthread -std=c++20 -Wall -Wextra -I ./include -g3 -lncurses
+CXXFLAGS += -std=c++20 -Wall -Wextra -I ./include -g3
 
 all: $(NAME)
 
@@ -38,6 +38,9 @@ $(NAME): $(OBJS)
 clean:
 	$(RM) $(OBJS)
 	$(RM) $(DEPS)
+	$(RM) updatePipe_*
+	$(RM) orderPipe_*
+	$(RM) log.txt
 
 fclean: clean
 	$(RM) $(NAME)

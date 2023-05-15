@@ -18,6 +18,6 @@ void appendToFile(const std::string& filename, const std::string& data)
         return;
     }
 
-    outFile << data;
+    outFile << data << std::endl;
     outFile.close();
 }

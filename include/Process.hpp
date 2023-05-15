@@ -24,7 +24,7 @@ class Process {
         if (pid == 0) {
             func();
             exit(0);
-        } else if (pid == -1) {
+        } else if (pid == FAILURE) {
             std::cerr << "Error creating process." << std::endl;
             exit(1);
         }
