@@ -6,6 +6,7 @@
 */
 
 #include "Ingredients.hpp"
+#include "Plazza.hpp"
 
 Ingredients::Ingredients(int replenishmentTime) : _replenishmentTime(replenishmentTime)
 {
@@ -56,5 +57,12 @@ void Ingredients::replenishStock()
         for (auto& ingredient : _stock) {
             addIngredient(ingredient.first, 1);
         }
+    }
+}
+
+void Ingredients::printStock()
+{
+    for (auto& ingredient : _stock) {
+        std::cout << ingredient.first << "=" << ingredient.second << std::endl;
     }
 }

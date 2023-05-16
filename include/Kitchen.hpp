@@ -31,17 +31,19 @@ class Kitchen {
     std::mutex _orderMutex;
 
     std::vector<PizzaOrder> _pizzaOrderQueue;
+    size_t _timeMultiplier;
 
 
   public:
-    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
-            const std::string& updatePipeName)
+     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
+            const std::string& updatePipeName, size_t timeMultiplier)
         : _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
           _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
           _updatePipe(std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Write)),
           _running(true),
-          _stock(replenishmentTime)
+          _stock(replenishmentTime),
+          _timeMultiplier(timeMultiplier)
     {
         _kitchenId = IDGenerator::generateID();
         _pizzaOrderQueue = std::vector<PizzaOrder>();
@@ -67,6 +69,8 @@ class Kitchen {
     size_t getKitchenID() const { return _kitchenId; }
 
     size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
+
+    size_t getTimeMultiplier() const { return _timeMultiplier; }
 
     size_t getReplenishmentTime() const { return _replenishmentTime; }
 

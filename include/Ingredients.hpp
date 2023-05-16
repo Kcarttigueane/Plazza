@@ -34,4 +34,6 @@ class Ingredients {
 
     // ! Replenish the stock every N seconds
     void replenishStock();
+
+    void printStock();
 };

@@ -47,6 +47,11 @@ PizzaType PizzaOrder::getType() const
     return _type;
 }
 
+size_t PizzaOrder::getTimeMultiplier() const
+{
+    return _timeMultiplier;
+}
+
 std::string PizzaOrder::getTypeString() const
 {
     switch (_type) {
@@ -134,13 +139,18 @@ void PizzaOrder::setBakingTime()
     }
 }
 
+std::map<std::string,int> PizzaOrder::getIngredients()
+{
+    return _ingredients;
+}
+
 // ! Overload operator<<:
 
 std::ostream& operator<<(std::ostream& os, const PizzaOrder& order)
 {
     os << static_cast<int>(PizzaOrderRequest) << " " << order._orderId << " " << order._clientId
        << " " << order._totalPizzasOrdered << " " << order._pizzaOrderIndex << " "
-       << static_cast<int>(order._type) << " " << static_cast<int>(order._size);
+       << static_cast<int>(order._type) << " " << static_cast<int>(order._size) << " " << order._timeMultiplier;
     return os;
 }
 
@@ -151,8 +161,8 @@ std::istream& operator>>(std::istream& is, PizzaOrder& order)
     int messageType, type, size;
 
     is >> messageType >> order._orderId >> order._clientId >> order._totalPizzasOrdered >>
-        order._pizzaOrderIndex >> type >> size;
-
+        order._pizzaOrderIndex >> type >> size >> order._timeMultiplier;
+    std::cout << order._timeMultiplier << std::endl;
     if (static_cast<MessageType>(messageType) == PizzaOrderRequest) {
         order._type = static_cast<PizzaType>(type);
         order._size = static_cast<PizzaSize>(size);
