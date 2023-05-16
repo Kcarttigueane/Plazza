@@ -25,8 +25,13 @@ class Kitchen {
     std::atomic<bool> _running;
 
     std::jthread _replenishmentThread;
+    std::vector<std::thread> _cookThread;
 
     Ingredients _stock;
+    std::mutex _orderMutex;
+
+    std::vector<PizzaOrder> _pizzaOrderQueue;
+
 
   public:
     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
@@ -39,6 +44,7 @@ class Kitchen {
           _stock(replenishmentTime)
     {
         _kitchenId = IDGenerator::generateID();
+        _pizzaOrderQueue = std::vector<PizzaOrder>();
     }
 
     ~Kitchen()

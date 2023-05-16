@@ -78,6 +78,11 @@ class PizzaOrder {
 
     void setIngredients();
     void setBakingTime();
+    std::map<std::string, int> getIngredients()
+    {
+        return _ingredients;
+    }
+
 
     // ! Overloads for stream operators:
 

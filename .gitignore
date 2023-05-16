@@ -54,3 +54,5 @@ dkms.conf
 
 # Binary files
 plazza
+.DS_Store
+.vscode/

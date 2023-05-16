@@ -74,7 +74,6 @@ void Reception::distributeOrder(PizzaOrder& order)
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
-
     orderPipe.write(serializedPizzaOrder);
 
     KitchenInfo& targetKitchenInfo = _kitchens[targetKitchenPID];
