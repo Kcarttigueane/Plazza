@@ -23,15 +23,15 @@ class Ingredients {
 
     virtual ~Ingredients(){};
 
-    // ! Getters:
     std::string getIndividualStock() const;
 
-    // ! Add a specific amount of an ingredient to the stock
     void addIngredient(const std::string& ingredient, int amount);
 
-    // ! Remove a specific amount of an ingredient from the stock
     bool removeIngredient(const std::string& ingredient, int amount);
 
-    // ! Replenish the stock every N seconds
     void replenishStock();
+
+    bool isStockEmpty() const;
+
+    void printStock();
 };

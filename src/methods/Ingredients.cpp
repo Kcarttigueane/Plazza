@@ -6,6 +6,7 @@
 */
 
 #include "Ingredients.hpp"
+#include "Plazza.hpp"
 
 Ingredients::Ingredients(int replenishmentTime) : _replenishmentTime(replenishmentTime)
 {
@@ -51,10 +52,26 @@ bool Ingredients::removeIngredient(const std::string& ingredient, int amount)
 
 void Ingredients::replenishStock()
 {
-    while (true) {
-        sleep(_replenishmentTime);
-        for (auto& ingredient : _stock) {
-            addIngredient(ingredient.first, 1);
+    for (auto& ingredient : _stock) {
+        int currentStock = ingredient.second;
+        int amountToAdd = std::min(5 - currentStock, 1);
+        addIngredient(ingredient.first, amountToAdd);
+    }
+}
+
+bool Ingredients::isStockEmpty() const
+{
+    for (auto& ingredient : _stock) {
+        if (ingredient.second > 0) {
+            return false;
         }
+    }
+    return true;
+}
+
+void Ingredients::printStock()
+{
+    for (auto& ingredient : _stock) {
+        std::cout << ingredient.first << "=" << ingredient.second << std::endl;
     }
 }

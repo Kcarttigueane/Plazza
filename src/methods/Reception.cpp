@@ -6,6 +6,7 @@
 */
 
 #include "Reception.hpp"
+#include "Plazza.hpp"
 
 void Reception::interactiveShellLoop()
 {
@@ -31,8 +32,8 @@ void Reception::createNewKitchen()
     std::string orderPipeName = "orderPipe_" + std::to_string(_kitchenPIDs.size());
     std::string updatePipeName = "updatePipe_" + std::to_string(_kitchenPIDs.size());
 
-    Process process([&, orderPipeName, updatePipeName]() {  // ! Child process
-        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName);
+    Process process([&, orderPipeName, updatePipeName]() {
+        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName, _timeMultiplier);
         kitchen.run();
     });
 
@@ -74,7 +75,6 @@ void Reception::distributeOrder(PizzaOrder& order)
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
-
     orderPipe.write(serializedPizzaOrder);
 
     KitchenInfo& targetKitchenInfo = _kitchens[targetKitchenPID];
@@ -156,6 +156,6 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 appendToFile("log.txt", update);
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Add a short sleep duration
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

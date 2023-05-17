@@ -78,6 +78,9 @@ class PizzaOrder {
 
     void setIngredients();
     void setBakingTime();
+    std::map<std::string, int> getIngredients();
+    size_t getTimeMultiplier() const;
+
 
     // ! Overloads for stream operators:
 

@@ -9,9 +9,15 @@
 
 PizzaType getPizzaTypeFromString(std::string pizzaTypeStr)
 {
-    for (size_t i = 0; i < PIZZAS.size(); i++) {
-        if (pizzaTypeStr == PIZZAS[i])
-            return static_cast<PizzaType>(i);
-    }
-    throw std::invalid_argument("Invalid pizza type");
+    if (pizzaTypeStr == "regina")
+        return PizzaType::Regina;
+    else if (pizzaTypeStr == "margarita")
+        return PizzaType::Margarita;
+    else if (pizzaTypeStr == "americana")
+        return PizzaType::Americana;
+    else if (pizzaTypeStr == "fantasia")
+        return PizzaType::Fantasia;
+    else
+        throw std::invalid_argument("Invalid pizza type");
+
 }
