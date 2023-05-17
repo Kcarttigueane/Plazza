@@ -5,9 +5,9 @@
 ** getPizzaSizeFromString.cpp
 */
 
-#include "../include/PizzaOrder.hpp"
+#include "PizzaOrder.hpp"
 
-PizzaType getPizzaTypeFromString(std::string pizzaTypeStr)
+PizzaType getPizzaTypeFromString(const std::string& pizzaTypeStr)
 {
     if (pizzaTypeStr == "regina")
         return PizzaType::Regina;
@@ -19,5 +19,4 @@ PizzaType getPizzaTypeFromString(std::string pizzaTypeStr)
         return PizzaType::Fantasia;
     else
         throw std::invalid_argument("Invalid pizza type");
-
 }

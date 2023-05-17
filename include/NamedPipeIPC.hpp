@@ -2,12 +2,19 @@
 ** EPITECH PROJECT, 2022
 ** B-CCP-400-LYN-4FAILURE-theplazza-jules.dutel
 ** File description:
-** NamePipeIPC.hpp
+** NamedPipeIPC.hpp
 */
 
 #pragma once
 
+#include <utility>
+
 #include "Plazza.hpp"
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 constexpr size_t BUFFER_SIZE = 256;
 constexpr char DELIMITER = '\0';
@@ -38,8 +45,8 @@ class NamedPipeIPC {
     ** @param mode The mode in which the NamedPipeIPC object operates (Read or Write).
     ** @param bufferSize The size of the buffer used for reading messages (default is BUFFER_SIZE).
     **/
-    NamedPipeIPC(const std::string& pipeName, Mode mode, size_t bufferSize = BUFFER_SIZE)
-        : _pipeName(pipeName), _mode(mode), _pipeFd(FAILURE), _bufferSize(bufferSize)
+    NamedPipeIPC(std::string pipeName, Mode mode, size_t bufferSize = BUFFER_SIZE)
+        : _pipeName(std::move(pipeName)), _mode(mode), _pipeFd(FAILURE), _bufferSize(bufferSize)
     {
         if (access(_pipeName.c_str(), F_OK) == FAILURE) {
             mkfifo(_pipeName.c_str(), 0666);
@@ -62,11 +69,11 @@ class NamedPipeIPC {
 
     // ! Getter:
 
-    std::string getPipeName() const { return _pipeName; }
+    [[nodiscard]] std::string getPipeName() const { return _pipeName; }
 
-    int getPipeFd() const { return _pipeFd; }
+    [[nodiscard]] int getPipeFd() const { return _pipeFd; }
 
-    Mode getMode() const { return _mode; }
+    [[nodiscard]] Mode getMode() const { return _mode; }
 
     // ! Methods
 
@@ -79,23 +86,7 @@ class NamedPipeIPC {
     ** @param message The message to write to the named pipe.
     ** @throw std::runtime_error if the NamedPipeIPC object is not in Write mode or if writing fails.
     **/
-    void write(const std::string& message)
-    {
-        if (_mode != Mode::Write) {
-            throw std::runtime_error("NamedPipeIPC is not in write mode");
-        }
-
-        ssize_t bytesWritten = ::write(_pipeFd, message.c_str(), message.size());
-
-        std::cout << BLUE_TEXT("[WRITE]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message)
-                  << "\" : " << std::endl;
-
-        if (bytesWritten != static_cast<ssize_t>(message.size())) {
-            throw std::runtime_error("Failed to write the complete message to the named pipe");
-        }
-
-        ::write(_pipeFd, &DELIMITER, 1);
-    }
+    void write(const std::string& message);
 
     /**
     ** @brief Reads a message from the named pipe.
@@ -106,28 +97,7 @@ class NamedPipeIPC {
     ** @return The message read from the named pipe.
     ** @throw std::runtime_error if the NamedPipeIPC object is not in Read mode or if reading fails.
     **/
-    std::string read()
-    {
-        if (_mode != Mode::Read) {
-            throw std::runtime_error("NamedPipeIPC is not in read mode");
-        }
-
-        std::unique_ptr<char[]> buffer(new char[_bufferSize]());
-        std::ostringstream message;
-
-        char ch;
-        while (::read(_pipeFd, &ch, 1) > 0 && ch != DELIMITER) {
-            message << ch;
-        }
-
-        std::cout << BLUE_TEXT("[READ]: ") << RED_TEXT(_pipeName)
-                  << " : \"" GREEN_TEXT(message.str()) << "\" : " << std::endl;
-        if (ch != DELIMITER) {
-            throw std::runtime_error("Failed to read the complete message from the named pipe");
-        }
-
-        return message.str();
-    }
+    std::string read();
 
   private:
     void openPipe()

@@ -6,6 +6,7 @@
 */
 
 #include "PizzaOrder.hpp"
+#include "Plazza.hpp"
 
 // ! Constructors:
 
@@ -139,7 +140,7 @@ void PizzaOrder::setBakingTime()
     }
 }
 
-std::map<std::string,int> PizzaOrder::getIngredients()
+std::map<std::string, int> PizzaOrder::getIngredients()
 {
     return _ingredients;
 }
@@ -150,7 +151,8 @@ std::ostream& operator<<(std::ostream& os, const PizzaOrder& order)
 {
     os << static_cast<int>(PizzaOrderRequest) << " " << order._orderId << " " << order._clientId
        << " " << order._totalPizzasOrdered << " " << order._pizzaOrderIndex << " "
-       << static_cast<int>(order._type) << " " << static_cast<int>(order._size) << " " << order._timeMultiplier;
+       << static_cast<int>(order._type) << " " << static_cast<int>(order._size) << " "
+       << order._timeMultiplier;
     return os;
 }
 

@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "Plazza.hpp"
+#include <iostream>
+#include <map>
+#include <vector>
 
 const std::vector<std::string> PIZZAS = {"regina", "margarita", "americana", "fantasia"};
 const std::vector<std::string> SIZES = {"S", "M", "L", "XL", "XXL"};
@@ -31,10 +33,10 @@ using std::size_t;
 
 class PizzaOrder {
   private:
-    size_t _orderId;
-    size_t _clientId;
-    size_t _totalPizzasOrdered;
-    size_t _pizzaOrderIndex;
+    size_t _orderId{};
+    size_t _clientId{};
+    size_t _totalPizzasOrdered{};
+    size_t _pizzaOrderIndex{};
     PizzaType _type;
     PizzaSize _size;
 
@@ -64,22 +66,22 @@ class PizzaOrder {
 
     // ! Getters:
 
-    size_t getOrderId() const;
-    size_t getClientId() const;
-    size_t getTotalPizzasOrdered() const;
-    size_t getPizzaOrderIndex() const;
-    PizzaType getType() const;
-    std::string getTypeString() const;
-    PizzaSize getSize() const;
-    std::string getSizeString() const;
-    int getBakingTime() const;
+    [[nodiscard]] size_t getOrderId() const;
+    [[nodiscard]] size_t getClientId() const;
+    [[nodiscard]] size_t getTotalPizzasOrdered() const;
+    [[nodiscard]] size_t getPizzaOrderIndex() const;
+    [[nodiscard]] PizzaType getType() const;
+    [[nodiscard]] std::string getTypeString() const;
+    [[nodiscard]] PizzaSize getSize() const;
+    [[nodiscard]] std::string getSizeString() const;
+    [[nodiscard]] int getBakingTime() const;
 
     // ! Set ingredients based on pizza type
 
     void setIngredients();
     void setBakingTime();
     std::map<std::string, int> getIngredients();
-    size_t getTimeMultiplier() const;
+    [[nodiscard]] size_t getTimeMultiplier() const;
 
 
     // ! Overloads for stream operators:
@@ -100,5 +102,5 @@ class PizzaOrder {
     friend std::istream& operator>>(std::istream& is, PizzaOrder& order);
 };
 
-PizzaSize getPizzaSizeFromString(std::string pizzaSizeStr);
-PizzaType getPizzaTypeFromString(std::string pizzaTypeStr);
+PizzaSize getPizzaSizeFromString(const std::string& pizzaSizeStr);
+PizzaType getPizzaTypeFromString(const std::string& pizzaTypeStr);

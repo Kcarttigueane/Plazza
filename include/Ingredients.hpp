@@ -19,11 +19,11 @@ class Ingredients {
     void initialize_stock();
 
   public:
-    Ingredients(int replenishmentTime);
+    explicit Ingredients(int replenishmentTime);
 
-    virtual ~Ingredients(){};
+    virtual ~Ingredients() = default;
 
-    std::string getIndividualStock() const;
+    [[nodiscard]] std::string getIndividualStock() const;
 
     void addIngredient(const std::string& ingredient, int amount);
 
@@ -31,7 +31,7 @@ class Ingredients {
 
     void replenishStock();
 
-    bool isStockEmpty() const;
+    [[nodiscard]] bool isStockEmpty() const;
 
     void printStock();
 };

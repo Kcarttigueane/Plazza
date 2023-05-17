@@ -8,17 +8,18 @@
 #pragma once
 
 #include "Kitchen.hpp"
-#include "PizzaOrder.hpp"
 #include "Plazza.hpp"
 #include "Process.hpp"
 
+#include <queue>
+
 struct KitchenInfo {
-    size_t activeOrders;
-    std::chrono::steady_clock::time_point lastUpdateTime;
-    std::unique_ptr<NamedPipeIPC> orderPipe;
-    std::unique_ptr<NamedPipeIPC> updatePipe;
-    std::deque<size_t> recentLoads;
-    float movingAvgLoad;
+    size_t activeOrders{};
+    std::chrono::steady_clock::time_point lastUpdateTime{};
+    std::unique_ptr<NamedPipeIPC> orderPipe{};
+    std::unique_ptr<NamedPipeIPC> updatePipe{};
+    std::deque<size_t> recentLoads{};
+    float movingAvgLoad{};
 };
 
 class Reception {
@@ -56,13 +57,13 @@ class Reception {
 
     // ! Getters:
 
-    float getTimeMultiplier() const { return _timeMultiplier; }
+    [[nodiscard]] float getTimeMultiplier() const { return _timeMultiplier; }
 
-    int getCooksPerKitchen() const { return _cookPerKitchen; }
+    [[nodiscard]] int getCooksPerKitchen() const { return _cookPerKitchen; }
 
-    int getReplenishmentTime() const { return _replenishmentTime; }
+    [[nodiscard]] int getReplenishmentTime() const { return _replenishmentTime; }
 
-    size_t getMaxOrdersPerKitchen() const { return _maxOrdersPerKitchen; }
+    [[nodiscard]] size_t getMaxOrdersPerKitchen() const { return _maxOrdersPerKitchen; }
 
     NamedPipeIPC& getNamedPipeByPid(pid_t pid)
     {

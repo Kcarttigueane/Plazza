@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 using std::string;
 
@@ -22,13 +23,13 @@ class MyCustomException : public std::exception {
     string _fullMessage;
 
   public:
-    MyCustomException(const string& message, const string& file, const string& function)
-        : _message(message), _file(file), _function(function)
+    MyCustomException(string  message, string  file, string  function)
+        : _message(std::move(message)), _file(std::move(file)), _function(std::move(function))
     {
         _fullMessage = _message + " (file: " + _file + ", function: " + _function + ")";
     }
 
-    const char* what() const noexcept override { return _fullMessage.c_str(); }
+    [[nodiscard]] const char* what() const noexcept override { return _fullMessage.c_str(); }
 };
 
 #endif  // MY_CUSTOM_EXCEPTION_H

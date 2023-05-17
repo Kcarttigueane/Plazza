@@ -8,17 +8,16 @@
 #pragma once
 
 #include <sys/wait.h>
-#include <unistd.h>
-#include <condition_variable>
 #include <functional>
-#include <iostream>
+
+#include "Plazza.hpp"
 
 class Process {
   private:
     pid_t pid;
 
   public:
-    Process(std::function<void()> func)
+    explicit Process(const std::function<void()>& func)
     {
         pid = fork();
         if (pid == 0) {
@@ -30,11 +29,11 @@ class Process {
         }
     }
 
-    void wait()
+    void wait() const
     {
         int status;
         waitpid(pid, &status, 0);
     }
 
-    pid_t getPid() const { return pid; }
+    [[nodiscard]] pid_t getPid() const { return pid; }
 };

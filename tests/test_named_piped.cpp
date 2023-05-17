@@ -8,7 +8,7 @@
 #include <criterion/criterion.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "../include/NamePipeIPC.hpp"
+#include "../include/NamedPipeIPC.hpp"
 
 Test(NamedPipeIPC, InterprocessCommunication)
 {
