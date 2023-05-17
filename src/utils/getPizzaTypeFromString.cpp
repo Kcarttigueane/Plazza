@@ -7,7 +7,7 @@
 
 #include "../include/PizzaOrder.hpp"
 
-PizzaSize getPizzaSizeFromString(std::string pizzaSizeStr)
+PizzaSize getPizzaSizeFromString(const std::string& pizzaSizeStr)
 {
     for (size_t i = 0; i < SIZES.size(); i++) {
         if (pizzaSizeStr == SIZES[i])

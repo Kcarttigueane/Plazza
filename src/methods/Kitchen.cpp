@@ -7,6 +7,10 @@
 
 #include "Kitchen.hpp"
 
+#include <format>
+#include <fstream>
+#include <iomanip>
+
 void Kitchen::initThreads()
 {
 
@@ -37,7 +41,7 @@ void Kitchen::run()
         }
     }
 
-     for (size_t i = 0; i < _cooksPerKitchen; ++i) {
+    for (size_t i = 0; i < _cooksPerKitchen; ++i) {
         if (_cookThread[i].joinable())
             _cookThread[i].join();
     }

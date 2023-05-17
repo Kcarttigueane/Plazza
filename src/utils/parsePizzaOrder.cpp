@@ -6,8 +6,8 @@
 */
 
 #include "PizzaOrder.hpp"
-#include "Plazza.hpp"
 #include "Reception.hpp"
+
 #include "regex"
 
 using std::string;
@@ -68,7 +68,7 @@ void parsePizzaOrder(string& input, Reception& reception)
         }
 
         for (int i = 0; i < number; i++) {
-            pizzaOrders.push_back(std::make_pair(type, size));
+            pizzaOrders.emplace_back(type, size);
         }
 
         input = matches.suffix().str();

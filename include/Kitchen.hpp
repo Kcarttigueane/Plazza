@@ -9,9 +9,12 @@
 
 #include "IDGenerator.hpp"
 #include "Ingredients.hpp"
-#include "NamePipeIPC.hpp"
+#include "NamedPipeIPC.hpp"
 #include "PizzaOrder.hpp"
-#include "Plazza.hpp"
+
+#include <atomic>
+#include <condition_variable>
+#include <thread>
 
 class Kitchen {
   private:
@@ -36,9 +39,8 @@ class Kitchen {
     std::vector<PizzaOrder> _pizzaOrderQueue;
     size_t _timeMultiplier;
 
-
   public:
-     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
+    Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
             const std::string& updatePipeName, size_t timeMultiplier)
         : _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
@@ -52,30 +54,17 @@ class Kitchen {
         _pizzaOrderQueue = std::vector<PizzaOrder>();
     }
 
-    ~Kitchen()
-    {
-        _running = false;
-
-        // for (auto& cook_thread : _cookThreads) {
-        //     if (cook_thread.joinable()) {
-        //         cook_thread.join();
-        //     }
-        // }
-
-        // if (_replenishmentThread.joinable()) {
-        //     _replenishmentThread.join();
-        // }
-    }
+    ~Kitchen() { _running = false; }
 
     // ! Getters:
 
-    size_t getKitchenID() const { return _kitchenId; }
+    [[nodiscard]] size_t getKitchenID() const { return _kitchenId; }
 
-    size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
+    [[nodiscard]] size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
 
-    size_t getTimeMultiplier() const { return _timeMultiplier; }
+    [[nodiscard]] size_t getTimeMultiplier() const { return _timeMultiplier; }
 
-    size_t getReplenishmentTime() const { return _replenishmentTime; }
+    [[nodiscard]] size_t getReplenishmentTime() const { return _replenishmentTime; }
 
     std::atomic<bool>& getRunning() { return _running; }
 

@@ -6,7 +6,8 @@
 */
 
 #include "Reception.hpp"
-#include "Plazza.hpp"
+
+#include <iomanip>
 
 void Reception::interactiveShellLoop()
 {
@@ -33,7 +34,8 @@ void Reception::createNewKitchen()
     std::string updatePipeName = "updatePipe_" + std::to_string(_kitchenPIDs.size());
 
     Process process([&, orderPipeName, updatePipeName]() {
-        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName, _timeMultiplier);
+        Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName,
+                        _timeMultiplier);
         kitchen.run();
     });
 
@@ -142,7 +144,7 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 continue;
             }
 
-            size_t pos = update.find(":");
+            size_t pos = update.find(':');
             std::string first_word = update.substr(0, pos);
 
             if (first_word == "statusResponse") {
