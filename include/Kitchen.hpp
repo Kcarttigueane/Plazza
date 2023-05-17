@@ -24,11 +24,14 @@ class Kitchen {
 
     std::atomic<bool> _running;
 
-    std::jthread _replenishmentThread;
+    std::thread _replenishmentThread;
     std::vector<std::thread> _cookThread;
 
     Ingredients _stock;
     std::mutex _orderMutex;
+    std::condition_variable _orderCV;
+
+    std::mutex _stockMutex;
 
     std::vector<PizzaOrder> _pizzaOrderQueue;
     size_t _timeMultiplier;
