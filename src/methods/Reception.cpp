@@ -30,12 +30,14 @@ void Reception::interactiveShellLoop()
 
 void Reception::createNewKitchen()
 {
-    std::string orderPipeName = "orderPipe_" + std::to_string(_kitchenPIDs.size());
-    std::string updatePipeName = "updatePipe_" + std::to_string(_kitchenPIDs.size());
+    std::string orderPipeName = "NamedPipes/orderPipe_" + std::to_string(_kitchenPIDs.size());
+    std::string updatePipeName = "NamedPipes/updatePipe_" + std::to_string(_kitchenPIDs.size());
+
+    size_t newKitchenId = _kitchenPIDs.size();
 
     Process process([&, orderPipeName, updatePipeName]() {
         Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName,
-                        _timeMultiplier);
+                        _timeMultiplier, newKitchenId);
         kitchen.run();
     });
 
@@ -43,7 +45,7 @@ void Reception::createNewKitchen()
     _kitchenPIDs.push_back(kitchenPid);
 
     KitchenInfo kitchenInfo;
-    kitchenInfo.activeOrders = 0;
+    kitchenInfo.kitchenId = std::make_unique<std::atomic<size_t>>(_kitchenPIDs.size() - 1);
     kitchenInfo.orderPipe =
         std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
     kitchenInfo.updatePipe =
@@ -56,29 +58,30 @@ void Reception::createNewKitchen()
 void Reception::distributeOrder(PizzaOrder& order)
 {
     pid_t targetKitchenPID = FAILURE;
-    float minLoad = std::numeric_limits<float>::max();
+    size_t minActiveOrders = std::numeric_limits<size_t>::max();
 
+    // Find the kitchen with the least active orders
     for (const auto& [kitchenPID, kitchenInfo] : _kitchens) {
-        if (kitchenInfo.activeOrders < _maxOrdersPerKitchen) {
-            float load = kitchenInfo.movingAvgLoad;
-            if (load < minLoad) {
-                minLoad = load;
-                targetKitchenPID = kitchenPID;
-            }
+        if (kitchenInfo.activeOrders < minActiveOrders) {
+            minActiveOrders = kitchenInfo.activeOrders;
+            targetKitchenPID = kitchenPID;
         }
     }
 
-    if (targetKitchenPID == -1) {
+    // If all kitchens are fully loaded (or there are no kitchens), create a new one
+    if (minActiveOrders >= _maxOrdersPerKitchen) {
         createNewKitchen();
         targetKitchenPID = _kitchenPIDs.back();
     }
 
+    // Send the order to the selected kitchen
     NamedPipeIPC& orderPipe = getNamedPipeByPid(targetKitchenPID);
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
     orderPipe.write(serializedPizzaOrder);
 
+    // Update the load of the kitchen
     KitchenInfo& targetKitchenInfo = _kitchens[targetKitchenPID];
     targetKitchenInfo.activeOrders++;
     targetKitchenInfo.recentLoads.push_back(targetKitchenInfo.activeOrders);
@@ -156,6 +159,8 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
             } else {
                 std::cout << MAGENTA_TEXT(update) << std::endl;
                 appendToFile("log.txt", update);
+                _kitchens[pid].activeOrders--;
+                _kitchens[pid].lastUpdateTime = std::chrono::steady_clock::now();
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

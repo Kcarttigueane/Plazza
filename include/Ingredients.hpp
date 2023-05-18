@@ -25,11 +25,11 @@ class Ingredients {
 
     [[nodiscard]] std::string getIndividualStock() const;
 
+    std::map<std::string, int> getStock() const { return _stock; }
+
     void addIngredient(const std::string& ingredient, int amount);
 
     bool removeIngredient(const std::string& ingredient, int amount);
-
-    void replenishStock();
 
     [[nodiscard]] bool isStockEmpty() const;
 

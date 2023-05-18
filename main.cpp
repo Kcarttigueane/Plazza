@@ -5,6 +5,7 @@
 ** main.c
 */
 
+#include "./include/IDGenerator.hpp"
 #include "./include/Plazza.hpp"
 #include "./include/Process.hpp"
 #include "./include/Reception.hpp"

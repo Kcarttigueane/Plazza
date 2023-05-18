@@ -38,8 +38,7 @@ $(NAME): $(OBJS)
 clean:
 	$(RM) $(OBJS)
 	$(RM) $(DEPS)
-	$(RM) updatePipe_*
-	$(RM) orderPipe_*
+	$(RM) NamedPipes/*
 	$(RM) log.txt
 
 fclean: clean

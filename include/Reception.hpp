@@ -14,6 +14,7 @@
 #include <queue>
 
 struct KitchenInfo {
+    std::unique_ptr<std::atomic<size_t>> kitchenId{};
     size_t activeOrders{};
     std::chrono::steady_clock::time_point lastUpdateTime{};
     std::unique_ptr<NamedPipeIPC> orderPipe{};
