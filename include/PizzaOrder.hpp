@@ -11,9 +11,6 @@
 #include <map>
 #include <vector>
 
-const std::vector<std::string> PIZZAS = {"regina", "margarita", "americana", "fantasia"};
-const std::vector<std::string> SIZES = {"S", "M", "L", "XL", "XXL"};
-
 enum PizzaType {
     Regina = 1,
     Margarita = 2,
