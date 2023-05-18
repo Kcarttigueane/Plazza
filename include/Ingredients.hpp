@@ -14,12 +14,12 @@
 class Ingredients {
   private:
     std::map<std::string, int> _stock;
-    int _replenishmentTime;
+    size_t _replenishmentTime;
 
     void initialize_stock();
 
   public:
-    explicit Ingredients(int replenishmentTime);
+    explicit Ingredients(size_t replenishmentTime);
 
     virtual ~Ingredients() = default;
 

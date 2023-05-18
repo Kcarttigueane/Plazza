@@ -8,7 +8,7 @@
 #include "Ingredients.hpp"
 #include "Plazza.hpp"
 
-Ingredients::Ingredients(int replenishmentTime) : _replenishmentTime(replenishmentTime)
+Ingredients::Ingredients(size_t replenishmentTime) : _replenishmentTime(replenishmentTime)
 {
     initialize_stock();
 }

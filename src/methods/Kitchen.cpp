@@ -75,7 +75,8 @@ void Kitchen::cook()
         _pizzaOrderQueue.erase(_pizzaOrderQueue.begin());
         std::cout << _pizzaOrderQueue.front() << std::endl;
         lock.unlock();
-        std::this_thread::sleep_for(std::chrono::seconds(order.getBakingTime()));
+        std::chrono::milliseconds duration(static_cast<long long>(order.getBakingTime()));
+        std::this_thread::sleep_for(duration);
         std::lock_guard<std::mutex> stockLock(_stockMutex);
         std::map<std::string, int> ingredients = order.getIngredients();
         for (const auto& ingredient : ingredients)

@@ -18,5 +18,5 @@ std::string getCurrentTimeString()
     char time_str[100];
     std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm);
 
-    return std::string(time_str);
+    return {time_str};
 }

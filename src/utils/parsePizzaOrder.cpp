@@ -32,7 +32,7 @@ static void serializePizzaAndMessageQueue(Reception& reception,
     }
 }
 
-static bool isPizzaOrderValid(string& type, string& size, int number)
+static bool isPizzaOrderValid(string& type, int number)
 {
     auto it_type = PIZZA_TYPES.find(type);
     if (it_type == PIZZA_TYPES.end()) {
@@ -59,7 +59,7 @@ void parsePizzaOrder(string& input, Reception& reception)
         string size = matches[2].str();
         int number = std::stoi(matches[3].str());
 
-        if (!isPizzaOrderValid(type, size, number)) {
+        if (!isPizzaOrderValid(type, number)) {
             std::cerr << "Error: Invalid pizza order" << std::endl;
             return;
         }

@@ -37,7 +37,7 @@ class Reception {
     std::mutex _kitchensMutex;
 
   public:
-    Reception(int multiplier, size_t cooksPerKitchen, size_t replenishmentTime,
+    Reception(float multiplier, size_t cooksPerKitchen, size_t replenishmentTime,
               size_t loadWindowSize)
         : _timeMultiplier(multiplier),
           _cookPerKitchen(cooksPerKitchen),
@@ -59,9 +59,9 @@ class Reception {
 
     [[nodiscard]] float getTimeMultiplier() const { return _timeMultiplier; }
 
-    [[nodiscard]] int getCooksPerKitchen() const { return _cookPerKitchen; }
+    [[nodiscard]] size_t getCooksPerKitchen() const { return _cookPerKitchen; }
 
-    [[nodiscard]] int getReplenishmentTime() const { return _replenishmentTime; }
+    [[nodiscard]] size_t getReplenishmentTime() const { return _replenishmentTime; }
 
     [[nodiscard]] size_t getMaxOrdersPerKitchen() const { return _maxOrdersPerKitchen; }
 

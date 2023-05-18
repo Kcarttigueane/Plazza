@@ -49,7 +49,7 @@ class PizzaOrder {
     PizzaSize _size;
 
     std::map<std::string, int> _ingredients;
-    int _bakingTime = 0;
+    float _bakingTime = 0;
     float _timeMultiplier = 0;
 
   public:
@@ -82,14 +82,14 @@ class PizzaOrder {
     [[nodiscard]] std::string getTypeString() const;
     [[nodiscard]] PizzaSize getSize() const;
     [[nodiscard]] std::string getSizeString() const;
-    [[nodiscard]] int getBakingTime() const;
+    [[nodiscard]] float getBakingTime() const;
 
     // ! Set ingredients based on pizza type
 
     void setIngredients();
     void setBakingTime();
     std::map<std::string, int> getIngredients();
-    [[nodiscard]] size_t getTimeMultiplier() const;
+    [[nodiscard]] float getTimeMultiplier() const;
 
     // ! Overloads for stream operators:
 
