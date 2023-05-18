@@ -79,5 +79,5 @@ class Kitchen {
 
     void cook(std::stop_token stopToken);
 
-    void replenishStock(std::stop_token st);
+    void replenishStock(const std::stop_token& st);
 };

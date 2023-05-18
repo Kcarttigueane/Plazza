@@ -10,16 +10,17 @@
 #include <format>
 #include <fstream>
 #include <iomanip>
+#include <utility>
 
 void Kitchen::initThreads()
 {
     _cookThread.resize(_cooksPerKitchen);
 
     for (size_t i = 0; i < _cooksPerKitchen; ++i) {
-        _cookThread[i] = std::jthread([this](std::stop_token st) { this->cook(st); });
+        _cookThread[i] = std::jthread([this](const std::stop_token& st) { this->cook(st); });
     }
 
-    _replenishmentThread = std::jthread([this](std::stop_token st) { this->replenishStock(st); });
+    _replenishmentThread = std::jthread([this](std::stop_token st) { this->replenishStock(std::move(st)); });
 }
 
 void Kitchen::run()
@@ -89,11 +90,11 @@ void Kitchen::cook(std::stop_token stopToken)
                 _stock.removeIngredient(ingredient.first, ingredient.second);
             }
         }
-        sendUpdateMessage(std::move(order));
+        sendUpdateMessage(order);
     }
 }
 
-void Kitchen::replenishStock(std::stop_token st)
+void Kitchen::replenishStock(const std::stop_token& st)
 {
     while (!st.stop_requested()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(_replenishmentTime));

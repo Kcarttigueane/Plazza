@@ -25,7 +25,7 @@ class Ingredients {
 
     [[nodiscard]] std::string getIndividualStock() const;
 
-    std::map<std::string, int> getStock() const { return _stock; }
+    [[nodiscard]] std::map<std::string, int> getStock() const { return _stock; }
 
     void addIngredient(const std::string& ingredient, int amount);
 
