@@ -28,15 +28,15 @@ void Ingredients::initialize_stock()
     _stock["chief_love"] = 5;
 }
 
-std::string Ingredients::getIndividualStock() const
+std::string Ingredients::getTotalStock() const
 {
-    std::string stock;
+    size_t stock = 0;
 
-    for (const auto& ingredient : _stock) {
-        stock += std::format("{}={}\n", ingredient.first, ingredient.second);
+    for (const auto& [ingredient, count] : _stock) {
+        stock += count;
     }
 
-    return stock;
+    return std::format("{}", stock);
 }
 
 void Ingredients::addIngredient(const std::string& ingredient, int amount)

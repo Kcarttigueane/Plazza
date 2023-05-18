@@ -77,6 +77,8 @@ class Kitchen {
 
     void sendUpdateMessage(const PizzaOrder& order);
 
+    void sendStatusResponse();
+
     void cook(std::stop_token stopToken);
 
     void replenishStock(const std::stop_token& st);

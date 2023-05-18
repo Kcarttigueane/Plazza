@@ -33,6 +33,8 @@ class Reception {
     size_t _loadWindowSize;
 
     std::vector<pid_t> _kitchenPIDs;
+    std::vector<std::string> _statusResponses;
+
     std::map<pid_t, KitchenInfo> _kitchens;
 
     std::mutex _kitchensMutex;
@@ -85,6 +87,7 @@ class Reception {
     void createNewKitchen();
     void closeIdleKitchens();
     void distributeOrder(PizzaOrder& order);
+    void displayStatusResponses();
 };
 
 void parsePizzaOrder(std::string& input, Reception& reception);
