@@ -29,6 +29,17 @@ enum PizzaSize {
     XXL = 16,
 };
 
+const std::map<std::string, PizzaType> PIZZA_TYPES = {{"regina", PizzaType::Regina},
+                                                      {"margarita", PizzaType::Margarita},
+                                                      {"americana", PizzaType::Americana},
+                                                      {"fantasia", PizzaType::Fantasia}};
+
+const std::map<std::string, PizzaSize> PIZZA_SIZES = {{"S", PizzaSize::S},
+                                                      {"M", PizzaSize::M},
+                                                      {"L", PizzaSize::L},
+                                                      {"XL", PizzaSize::XL},
+                                                      {"XXL", PizzaSize::XXL}};
+
 using std::size_t;
 
 class PizzaOrder {
@@ -83,13 +94,13 @@ class PizzaOrder {
     std::map<std::string, int> getIngredients();
     [[nodiscard]] size_t getTimeMultiplier() const;
 
-
     // ! Overloads for stream operators:
 
     /**
     ** @brief Overload of the << operator (pack)
     ** @param os The output stream
     ** @param order The order to display
+    ** @return The output stream : PizzaOrderRequest orderId clientId totalPizzasOrdered pizzaOrderIndex type size timeMultiplier
     **/
     friend std::ostream& operator<<(std::ostream& os, const PizzaOrder& order);
 
