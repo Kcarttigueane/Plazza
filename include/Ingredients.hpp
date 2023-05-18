@@ -23,7 +23,7 @@ class Ingredients {
 
     virtual ~Ingredients() = default;
 
-    [[nodiscard]] std::string getIndividualStock() const;
+    [[nodiscard]] std::string getTotalStock() const;
 
     [[nodiscard]] std::map<std::string, int> getStock() const { return _stock; }
 

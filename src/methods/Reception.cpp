@@ -7,6 +7,7 @@
 
 #include "Reception.hpp"
 
+#include <format>
 #include <iomanip>
 
 void Reception::interactiveShellLoop()
@@ -101,7 +102,7 @@ void Reception::closeIdleKitchens() {}
 void Reception::sendStatusRequestToAllKitchens()
 {
     for (auto& namedPipeEntry : _kitchens) {
-        namedPipeEntry.second.orderPipe->write("statusRequest");
+        namedPipeEntry.second.orderPipe->write("StatusRequest");
     }
 }
 
@@ -120,17 +121,28 @@ std::tuple<std::string, int, int, std::string> parseStatusResponse(
     return std::make_tuple(kitchenID, cooksPerKitchen, pizzaOrderQueueLength, stock);
 }
 
-void displayStatusResponse(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
-                           const std::string& ingredientStock)
+void Reception::displayStatusResponses()
 {
-    std::cout << "status" << std::endl;
+    if (_kitchens.empty()) {
+        std::cout << "No kitchens are currently running." << std::endl;
+        return;
+    }
+
+    if (_statusResponses.size() != _kitchenPIDs.size()) {
+        std::cout << "Not all kitchens have responded yet." << std::endl;
+        return;
+    }
+
     std::cout << std::setw(10) << "Kitchen ID"
               << " | " << std::setw(18) << "Pizzas in Progress"
               << " | " << std::setw(15) << "Available Cooks"
               << " | " << std::setw(16) << "Ingredient Stock" << std::endl;
-    std::cout << std::setw(10) << kitchenID << " | " << std::setw(18) << pizzasInProgress << " | "
-              << std::setw(15) << availableCooks << " | " << std::setw(16) << ingredientStock
-              << std::endl;
+
+    for (const auto& statusResponse : _statusResponses) {
+        std::cout << statusResponse << std::endl;
+    }
+
+    _statusResponses.clear();
 }
 
 void Reception::processUpdates(std::atomic_bool& stopThread)
@@ -150,12 +162,18 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
             size_t pos = update.find(':');
             std::string first_word = update.substr(0, pos);
 
-            if (first_word == "statusResponse") {
+            if (first_word == "StatusResponse") {
                 auto statusTuple = parseStatusResponse(update);
                 std::string kitchenID = std::get<0>(statusTuple);
                 int availableCooks = std::get<1>(statusTuple);
                 int pizzasInProgress = std::get<2>(statusTuple);
-                // displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
+                std::string ingredientStock = std::get<3>(statusTuple);
+                std::cout << MAGENTA_TEXT(ingredientStock) << std::endl;
+                std::string formattedString =
+                    std::format("{0:<10} | {1:<18} | {2:<15} | {3:<16}", kitchenID,
+                                pizzasInProgress, availableCooks, ingredientStock);
+                _statusResponses.push_back(formattedString);
+                displayStatusResponses();
             } else {
                 std::cout << MAGENTA_TEXT(update) << std::endl;
                 appendToFile("log.txt", update);

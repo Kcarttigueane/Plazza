@@ -20,7 +20,8 @@ void Kitchen::initThreads()
         _cookThread[i] = std::jthread([this](const std::stop_token& st) { this->cook(st); });
     }
 
-    _replenishmentThread = std::jthread([this](std::stop_token st) { this->replenishStock(std::move(st)); });
+    _replenishmentThread =
+        std::jthread([this](std::stop_token st) { this->replenishStock(std::move(st)); });
 }
 
 void Kitchen::run()
@@ -28,6 +29,12 @@ void Kitchen::run()
     while (true) {
         std::string orderStr = _orderPipe->read();
         if (!orderStr.empty()) {
+            size_t pos = orderStr.find(' ');
+            std::string first_word = orderStr.substr(0, pos);
+            if (first_word == "StatusRequest") {
+                sendStatusResponse();
+                continue;
+            }
             PizzaOrder order;
             std::istringstream iss(orderStr);
             iss >> order;
@@ -51,6 +58,16 @@ void Kitchen::sendUpdateMessage(const PizzaOrder& order)
 
     std::cout << YELLOW_TEXT(msg) << std::endl;
     _updatePipe->write(msg);
+}
+
+void Kitchen::sendStatusResponse()
+{
+    std::string statusResponse =
+        std::format("StatusResponse: {} {} {} {}", _kitchenId, _cooksPerKitchen,
+                    _pizzaOrderQueue.size(), _stock.getTotalStock());
+
+    std::cout << CYAN_TEXT(statusResponse) << std::endl;
+    _updatePipe->write(statusResponse);
 }
 
 void Kitchen::cook(std::stop_token stopToken)
