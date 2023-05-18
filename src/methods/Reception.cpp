@@ -7,6 +7,7 @@
 
 #include "Reception.hpp"
 
+#include <format>
 #include <iomanip>
 
 void Reception::interactiveShellLoop()
@@ -30,12 +31,14 @@ void Reception::interactiveShellLoop()
 
 void Reception::createNewKitchen()
 {
-    std::string orderPipeName = "orderPipe_" + std::to_string(_kitchenPIDs.size());
-    std::string updatePipeName = "updatePipe_" + std::to_string(_kitchenPIDs.size());
+    std::string orderPipeName = "NamedPipes/orderPipe_" + std::to_string(_kitchenPIDs.size());
+    std::string updatePipeName = "NamedPipes/updatePipe_" + std::to_string(_kitchenPIDs.size());
+
+    size_t newKitchenId = _kitchenPIDs.size();
 
     Process process([&, orderPipeName, updatePipeName]() {
         Kitchen kitchen(_cookPerKitchen, _replenishmentTime, orderPipeName, updatePipeName,
-                        _timeMultiplier);
+                        _timeMultiplier, newKitchenId);
         kitchen.run();
     });
 
@@ -43,7 +46,7 @@ void Reception::createNewKitchen()
     _kitchenPIDs.push_back(kitchenPid);
 
     KitchenInfo kitchenInfo;
-    kitchenInfo.activeOrders = 0;
+    kitchenInfo.kitchenId = std::make_unique<std::atomic<size_t>>(_kitchenPIDs.size() - 1);
     kitchenInfo.orderPipe =
         std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
     kitchenInfo.updatePipe =
@@ -56,29 +59,30 @@ void Reception::createNewKitchen()
 void Reception::distributeOrder(PizzaOrder& order)
 {
     pid_t targetKitchenPID = FAILURE;
-    float minLoad = std::numeric_limits<float>::max();
+    size_t minActiveOrders = std::numeric_limits<size_t>::max();
 
+    // Find the kitchen with the least active orders
     for (const auto& [kitchenPID, kitchenInfo] : _kitchens) {
-        if (kitchenInfo.activeOrders < _maxOrdersPerKitchen) {
-            float load = kitchenInfo.movingAvgLoad;
-            if (load < minLoad) {
-                minLoad = load;
-                targetKitchenPID = kitchenPID;
-            }
+        if (kitchenInfo.activeOrders < minActiveOrders) {
+            minActiveOrders = kitchenInfo.activeOrders;
+            targetKitchenPID = kitchenPID;
         }
     }
 
-    if (targetKitchenPID == FAILURE) {
+    // If all kitchens are fully loaded (or there are no kitchens), create a new one
+    if (minActiveOrders >= _maxOrdersPerKitchen) {
         createNewKitchen();
         targetKitchenPID = _kitchenPIDs.back();
     }
 
+    // Send the order to the selected kitchen
     NamedPipeIPC& orderPipe = getNamedPipeByPid(targetKitchenPID);
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
     orderPipe.write(serializedPizzaOrder);
 
+    // Update the load of the kitchen
     KitchenInfo& targetKitchenInfo = _kitchens[targetKitchenPID];
     targetKitchenInfo.activeOrders++;
     targetKitchenInfo.recentLoads.push_back(targetKitchenInfo.activeOrders);
@@ -98,7 +102,7 @@ void Reception::closeIdleKitchens() {}
 void Reception::sendStatusRequestToAllKitchens()
 {
     for (auto& namedPipeEntry : _kitchens) {
-        namedPipeEntry.second.orderPipe->write("statusRequest");
+        namedPipeEntry.second.orderPipe->write("StatusRequest");
     }
 }
 
@@ -117,17 +121,28 @@ std::tuple<std::string, int, int, std::string> parseStatusResponse(
     return std::make_tuple(kitchenID, cooksPerKitchen, pizzaOrderQueueLength, stock);
 }
 
-void displayStatusResponse(const std::string& kitchenID, int pizzasInProgress, int availableCooks,
-                           const std::string& ingredientStock)
+void Reception::displayStatusResponses()
 {
-    std::cout << "status" << std::endl;
+    if (_kitchens.empty()) {
+        std::cout << "No kitchens are currently running." << std::endl;
+        return;
+    }
+
+    if (_statusResponses.size() != _kitchenPIDs.size()) {
+        std::cout << "Not all kitchens have responded yet." << std::endl;
+        return;
+    }
+
     std::cout << std::setw(10) << "Kitchen ID"
               << " | " << std::setw(18) << "Pizzas in Progress"
               << " | " << std::setw(15) << "Available Cooks"
               << " | " << std::setw(16) << "Ingredient Stock" << std::endl;
-    std::cout << std::setw(10) << kitchenID << " | " << std::setw(18) << pizzasInProgress << " | "
-              << std::setw(15) << availableCooks << " | " << std::setw(16) << ingredientStock
-              << std::endl;
+
+    for (const auto& statusResponse : _statusResponses) {
+        std::cout << statusResponse << std::endl;
+    }
+
+    _statusResponses.clear();
 }
 
 void Reception::processUpdates(std::atomic_bool& stopThread)
@@ -147,15 +162,23 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
             size_t pos = update.find(':');
             std::string first_word = update.substr(0, pos);
 
-            if (first_word == "statusResponse") {
+            if (first_word == "StatusResponse") {
                 auto statusTuple = parseStatusResponse(update);
                 std::string kitchenID = std::get<0>(statusTuple);
                 int availableCooks = std::get<1>(statusTuple);
                 int pizzasInProgress = std::get<2>(statusTuple);
-                // displayStatusResponse(kitchenID, pizzasInProgress, availableCooks, ingredientStock);
+                std::string ingredientStock = std::get<3>(statusTuple);
+                std::cout << MAGENTA_TEXT(ingredientStock) << std::endl;
+                std::string formattedString =
+                    std::format("{0:<10} | {1:<18} | {2:<15} | {3:<16}", kitchenID,
+                                pizzasInProgress, availableCooks, ingredientStock);
+                _statusResponses.push_back(formattedString);
+                displayStatusResponses();
             } else {
                 std::cout << MAGENTA_TEXT(update) << std::endl;
                 appendToFile("log.txt", update);
+                _kitchens[pid].activeOrders--;
+                _kitchens[pid].lastUpdateTime = std::chrono::steady_clock::now();
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

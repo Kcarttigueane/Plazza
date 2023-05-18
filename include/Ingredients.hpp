@@ -23,13 +23,13 @@ class Ingredients {
 
     virtual ~Ingredients() = default;
 
-    [[nodiscard]] std::string getIndividualStock() const;
+    [[nodiscard]] std::string getTotalStock() const;
+
+    [[nodiscard]] std::map<std::string, int> getStock() const { return _stock; }
 
     void addIngredient(const std::string& ingredient, int amount);
 
     bool removeIngredient(const std::string& ingredient, int amount);
-
-    void replenishStock();
 
     [[nodiscard]] bool isStockEmpty() const;
 

@@ -7,54 +7,57 @@
 
 #pragma once
 
-#include "IDGenerator.hpp"
 #include "Ingredients.hpp"
 #include "NamedPipeIPC.hpp"
 #include "PizzaOrder.hpp"
 
 #include <atomic>
 #include <condition_variable>
+#include <stop_token>
 #include <thread>
+#include <vector>
 
 class Kitchen {
   private:
     size_t _kitchenId;
     size_t _cooksPerKitchen;
     size_t _replenishmentTime;
+    size_t _timeMultiplier;
 
     std::unique_ptr<NamedPipeIPC> _orderPipe;
     std::unique_ptr<NamedPipeIPC> _updatePipe;
 
-    std::atomic<bool> _running;
-
-    std::thread _replenishmentThread;
-    std::vector<std::thread> _cookThread;
+    std::jthread _replenishmentThread;
+    std::vector<std::jthread> _cookThread;
 
     Ingredients _stock;
+    std::vector<PizzaOrder> _pizzaOrderQueue;
+
     std::mutex _orderMutex;
     std::condition_variable _orderCV;
+    std::condition_variable _stockCV;
 
     std::mutex _stockMutex;
 
-    std::vector<PizzaOrder> _pizzaOrderQueue;
-    float _timeMultiplier;
+    std::atomic<size_t> _cookId;
 
   public:
     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
-            const std::string& updatePipeName, float timeMultiplier)
-        : _cooksPerKitchen(cooksPerKitchen),
+            const std::string& updatePipeName, float timeMultiplier, size_t kitchenId)
+        : _kitchenId(kitchenId),
+          _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
+          _timeMultiplier(timeMultiplier),
           _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
           _updatePipe(std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Write)),
-          _running(true),
           _stock(replenishmentTime),
-          _timeMultiplier(timeMultiplier)
+          _cookId(0)
     {
-        _kitchenId = IDGenerator::generateID();
         _pizzaOrderQueue = std::vector<PizzaOrder>();
+        initThreads();
     }
 
-    ~Kitchen() { _running = false; }
+    ~Kitchen() = default;
 
     // ! Getters:
 
@@ -66,8 +69,6 @@ class Kitchen {
 
     [[nodiscard]] size_t getReplenishmentTime() const { return _replenishmentTime; }
 
-    std::atomic<bool>& getRunning() { return _running; }
-
     // ! Methods:
 
     void initThreads();
@@ -76,7 +77,9 @@ class Kitchen {
 
     void sendUpdateMessage(const PizzaOrder& order);
 
-    void cook();
+    void sendStatusResponse();
 
-    void replenishStock();
+    void cook(std::stop_token stopToken);
+
+    void replenishStock(const std::stop_token& st);
 };

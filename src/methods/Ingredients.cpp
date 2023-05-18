@@ -6,6 +6,8 @@
 */
 
 #include "Ingredients.hpp"
+#include <algorithm>
+#include <format>
 #include "Plazza.hpp"
 
 Ingredients::Ingredients(size_t replenishmentTime) : _replenishmentTime(replenishmentTime)
@@ -26,19 +28,20 @@ void Ingredients::initialize_stock()
     _stock["chief_love"] = 5;
 }
 
-std::string Ingredients::getIndividualStock() const
+std::string Ingredients::getTotalStock() const
 {
-    std::string stock;
+    size_t stock = 0;
 
-    for (auto& ingredient : _stock) {
-        stock += ingredient.first + "=" + std::to_string(ingredient.second) + "\n";
+    for (const auto& [ingredient, count] : _stock) {
+        stock += count;
     }
-    return stock;
+
+    return std::format("{}", stock);
 }
 
 void Ingredients::addIngredient(const std::string& ingredient, int amount)
 {
-    _stock[ingredient] += amount;
+    _stock[ingredient] = std::min(_stock[ingredient] + amount, 5);
 }
 
 bool Ingredients::removeIngredient(const std::string& ingredient, int amount)
@@ -50,28 +53,14 @@ bool Ingredients::removeIngredient(const std::string& ingredient, int amount)
     return false;
 }
 
-void Ingredients::replenishStock()
+void Ingredients::printStock()
 {
-    for (auto& ingredient : _stock) {
-        int currentStock = ingredient.second;
-        int amountToAdd = std::min(5 - currentStock, 1);
-        addIngredient(ingredient.first, amountToAdd);
+    for (const auto& [ingredient, count] : _stock) {
+        std::cout << std::format("{}={}\n", ingredient, count);
     }
 }
 
 bool Ingredients::isStockEmpty() const
 {
-    for (auto& ingredient : _stock) {
-        if (ingredient.second > 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void Ingredients::printStock()
-{
-    for (auto& ingredient : _stock) {
-        std::cout << ingredient.first << "=" << ingredient.second << std::endl;
-    }
+    return std::ranges::all_of(_stock, [](const auto& pair) { return pair.second == 0; });
 }
