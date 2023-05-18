@@ -37,11 +37,11 @@ class Kitchen {
     std::mutex _stockMutex;
 
     std::vector<PizzaOrder> _pizzaOrderQueue;
-    size_t _timeMultiplier;
+    float _timeMultiplier;
 
   public:
     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
-            const std::string& updatePipeName, size_t timeMultiplier)
+            const std::string& updatePipeName, float timeMultiplier)
         : _cooksPerKitchen(cooksPerKitchen),
           _replenishmentTime(replenishmentTime),
           _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
@@ -62,7 +62,7 @@ class Kitchen {
 
     [[nodiscard]] size_t getCooksPerKitchen() const { return _cooksPerKitchen; }
 
-    [[nodiscard]] size_t getTimeMultiplier() const { return _timeMultiplier; }
+    [[nodiscard]] float getTimeMultiplier() const { return _timeMultiplier; }
 
     [[nodiscard]] size_t getReplenishmentTime() const { return _replenishmentTime; }
 
@@ -74,7 +74,7 @@ class Kitchen {
 
     void run();
 
-    void sendUpdateMessage(const PizzaOrder& order, int _kitchenId);
+    void sendUpdateMessage(const PizzaOrder& order);
 
     void cook();
 

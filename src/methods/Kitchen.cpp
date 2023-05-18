@@ -13,7 +13,6 @@
 
 void Kitchen::initThreads()
 {
-
     _cookThread.resize(_cooksPerKitchen);
     for (size_t i = 0; i < _cooksPerKitchen; ++i) {
         _cookThread[i] = std::thread(&Kitchen::cook, this);
@@ -29,13 +28,14 @@ void Kitchen::run()
         std::string orderStr = _orderPipe->read();
         if (!orderStr.empty()) {
             PizzaOrder order;
+
             std::istringstream iss(orderStr);
             iss >> order;
             std::map<std::string, int> Ingredients = order.getIngredients();
             std::unique_lock<std::mutex> lock(_orderMutex);
             _pizzaOrderQueue.push_back(order);
             lock.unlock();
-            sendUpdateMessage(order, _kitchenId);
+            sendUpdateMessage(order);
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
@@ -48,7 +48,7 @@ void Kitchen::run()
     _replenishmentThread.join();
 }
 
-void Kitchen::sendUpdateMessage(const PizzaOrder& order, int _kitchenId)
+void Kitchen::sendUpdateMessage(const PizzaOrder& order)
 {
     std::string msg = std::format(
         "PizzaOrderResponse: [{}] Order #{} ({}/{}) completed:{} ({}) prepared by Kitchen #{}!",
@@ -62,7 +62,9 @@ void Kitchen::sendUpdateMessage(const PizzaOrder& order, int _kitchenId)
 void Kitchen::cook()
 {
     size_t cookId = IDGenerator::generateID();
+
     std::cout << "Cook " << cookId << " is ready." << std::endl;
+
     while (_running) {
         PizzaOrder order;
         std::unique_lock<std::mutex> lock(_orderMutex);
@@ -73,11 +75,13 @@ void Kitchen::cook()
         _pizzaOrderQueue.erase(_pizzaOrderQueue.begin());
         std::cout << _pizzaOrderQueue.front() << std::endl;
         lock.unlock();
-        std::this_thread::sleep_for(std::chrono::seconds(order.getBakingTime()));
+        std::chrono::milliseconds duration(static_cast<long long>(order.getBakingTime()));
+        std::this_thread::sleep_for(duration);
         std::lock_guard<std::mutex> stockLock(_stockMutex);
         std::map<std::string, int> ingredients = order.getIngredients();
         for (const auto& ingredient : ingredients)
             _stock.removeIngredient(ingredient.first, ingredient.second);
+        sendUpdateMessage(order);
     }
 }
 

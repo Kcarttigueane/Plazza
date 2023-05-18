@@ -7,11 +7,12 @@
 
 #include "../include/PizzaOrder.hpp"
 
-PizzaSize getPizzaSizeFromString(const std::string& pizzaSizeStr)
+PizzaType getPizzaTypeFromString(const std::string& pizzaTypeStr)
 {
-    for (size_t i = 0; i < SIZES.size(); i++) {
-        if (pizzaSizeStr == SIZES[i])
-            return static_cast<PizzaSize>(i);
+    auto it = PIZZA_TYPES.find(pizzaTypeStr);
+
+    if (it != PIZZA_TYPES.end()) {
+        return it->second;
     }
-    throw std::invalid_argument("Invalid pizza size");
+    throw std::invalid_argument("Invalid pizza type");
 }

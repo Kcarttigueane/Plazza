@@ -11,9 +11,6 @@
 #include <map>
 #include <vector>
 
-const std::vector<std::string> PIZZAS = {"regina", "margarita", "americana", "fantasia"};
-const std::vector<std::string> SIZES = {"S", "M", "L", "XL", "XXL"};
-
 enum PizzaType {
     Regina = 1,
     Margarita = 2,
@@ -29,6 +26,17 @@ enum PizzaSize {
     XXL = 16,
 };
 
+const std::map<std::string, PizzaType> PIZZA_TYPES = {{"regina", PizzaType::Regina},
+                                                      {"margarita", PizzaType::Margarita},
+                                                      {"americana", PizzaType::Americana},
+                                                      {"fantasia", PizzaType::Fantasia}};
+
+const std::map<std::string, PizzaSize> PIZZA_SIZES = {{"S", PizzaSize::S},
+                                                      {"M", PizzaSize::M},
+                                                      {"L", PizzaSize::L},
+                                                      {"XL", PizzaSize::XL},
+                                                      {"XXL", PizzaSize::XXL}};
+
 using std::size_t;
 
 class PizzaOrder {
@@ -41,7 +49,7 @@ class PizzaOrder {
     PizzaSize _size;
 
     std::map<std::string, int> _ingredients;
-    int _bakingTime = 0;
+    float _bakingTime = 0;
     float _timeMultiplier = 0;
 
   public:
@@ -74,15 +82,14 @@ class PizzaOrder {
     [[nodiscard]] std::string getTypeString() const;
     [[nodiscard]] PizzaSize getSize() const;
     [[nodiscard]] std::string getSizeString() const;
-    [[nodiscard]] int getBakingTime() const;
+    [[nodiscard]] float getBakingTime() const;
 
     // ! Set ingredients based on pizza type
 
     void setIngredients();
     void setBakingTime();
     std::map<std::string, int> getIngredients();
-    [[nodiscard]] size_t getTimeMultiplier() const;
-
+    [[nodiscard]] float getTimeMultiplier() const;
 
     // ! Overloads for stream operators:
 
@@ -90,6 +97,7 @@ class PizzaOrder {
     ** @brief Overload of the << operator (pack)
     ** @param os The output stream
     ** @param order The order to display
+    ** @return The output stream : PizzaOrderRequest orderId clientId totalPizzasOrdered pizzaOrderIndex type size timeMultiplier
     **/
     friend std::ostream& operator<<(std::ostream& os, const PizzaOrder& order);
 

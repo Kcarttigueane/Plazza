@@ -48,7 +48,7 @@ PizzaType PizzaOrder::getType() const
     return _type;
 }
 
-size_t PizzaOrder::getTimeMultiplier() const
+float PizzaOrder::getTimeMultiplier() const
 {
     return _timeMultiplier;
 }
@@ -90,7 +90,7 @@ std::string PizzaOrder::getSizeString() const
     return "";
 }
 
-int PizzaOrder::getBakingTime() const
+float PizzaOrder::getBakingTime() const
 {
     return _bakingTime;
 }

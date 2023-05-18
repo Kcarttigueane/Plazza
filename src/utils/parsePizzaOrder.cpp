@@ -20,10 +20,11 @@ static void serializePizzaAndMessageQueue(Reception& reception,
     size_t orderId = IDGenerator::generateID();
     size_t clientId = IDGenerator::generateID();
 
-    for (size_t pizzaOrderIndex = 0; pizzaOrderIndex < totalPizzasOrdered; pizzaOrderIndex++) {
-        PizzaType type = getPizzaTypeFromString(std::get<0>(pizzaOrders[pizzaOrderIndex]));
-        PizzaSize size = getPizzaSizeFromString(std::get<1>(pizzaOrders[pizzaOrderIndex]));
+    for (size_t i = 0; i < totalPizzasOrdered; i++) {
+        PizzaType type = getPizzaTypeFromString(std::get<0>(pizzaOrders[i]));
+        PizzaSize size = getPizzaSizeFromString(std::get<1>(pizzaOrders[i]));
 
+        size_t pizzaOrderIndex = i + 1;
         PizzaOrder pizzaOrder(orderId, clientId, totalPizzasOrdered, pizzaOrderIndex, type, size,
                               reception.getTimeMultiplier());
 
@@ -31,15 +32,11 @@ static void serializePizzaAndMessageQueue(Reception& reception,
     }
 }
 
-static bool isPizzaOrderValid(string& type, string& size, int number)
+static bool isPizzaOrderValid(string& type, int number)
 {
-    if (std::find(PIZZAS.begin(), PIZZAS.end(), type) == PIZZAS.end()) {
+    auto it_type = PIZZA_TYPES.find(type);
+    if (it_type == PIZZA_TYPES.end()) {
         std::cerr << "Error: Invalid pizza type" << std::endl;
-        return false;
-    }
-
-    if (std::find(SIZES.begin(), SIZES.end(), size) == SIZES.end()) {
-        std::cerr << "Error: Invalid pizza size" << std::endl;
         return false;
     }
 
@@ -62,7 +59,7 @@ void parsePizzaOrder(string& input, Reception& reception)
         string size = matches[2].str();
         int number = std::stoi(matches[3].str());
 
-        if (!isPizzaOrderValid(type, size, number)) {
+        if (!isPizzaOrderValid(type, number)) {
             std::cerr << "Error: Invalid pizza order" << std::endl;
             return;
         }
