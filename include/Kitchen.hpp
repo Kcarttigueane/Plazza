@@ -74,7 +74,7 @@ class Kitchen {
 
     void run();
 
-    void sendUpdateMessage(const PizzaOrder& order, int _kitchenId);
+    void sendUpdateMessage(const PizzaOrder& order);
 
     void cook();
 

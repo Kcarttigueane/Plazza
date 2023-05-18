@@ -32,7 +32,7 @@ class Reception {
     size_t _loadWindowSize;
 
     std::vector<pid_t> _kitchenPIDs;
-    std::map<pid_t, KitchenInfo> _kitchens;
+    std::unordered_map<pid_t, KitchenInfo> _kitchens;
 
     std::mutex _kitchensMutex;
 

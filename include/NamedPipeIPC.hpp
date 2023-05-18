@@ -51,7 +51,13 @@ class NamedPipeIPC {
         if (access(_pipeName.c_str(), F_OK) == FAILURE) {
             mkfifo(_pipeName.c_str(), 0666);
         }
-        openPipe();
+
+        try {
+            openPipe();
+        } catch (std::runtime_error& e) {
+            std::remove(_pipeName.c_str());
+            throw;
+        }
     }
 
     /**

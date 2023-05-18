@@ -68,7 +68,7 @@ void Reception::distributeOrder(PizzaOrder& order)
         }
     }
 
-    if (targetKitchenPID == -1) {
+    if (targetKitchenPID == FAILURE) {
         createNewKitchen();
         targetKitchenPID = _kitchenPIDs.back();
     }
