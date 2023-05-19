@@ -21,10 +21,10 @@ void Kitchen::initThreads()
     }
 
     _replenishmentThread =
-        std::jthread([this](std::stop_token st) { this->replenishStock(std::move(st)); });
+        std::jthread([this](const std::stop_token& st) { this->replenishStock(st); });
 }
 
-void Kitchen::run()
+[[noreturn]] void Kitchen::run()
 {
     while (true) {
         std::string orderStr = _orderPipe->read();
@@ -57,7 +57,7 @@ void Kitchen::sendUpdateMessage(const PizzaOrder& order)
         getCurrentTimeString(), order.getOrderId(), order.getPizzaOrderIndex(),
         order.getTotalPizzasOrdered(), order.getTypeString(), order.getSizeString(), _kitchenId);
 
-    std::cout << YELLOW_TEXT(msg) << std::endl;
+    // std::cout << YELLOW_TEXT(msg) << std::endl;
     _updatePipe->write(msg);
 }
 
@@ -94,7 +94,7 @@ void Kitchen::cook(std::stop_token stopToken)
                 std::cout << _pizzaOrderQueue.front() << std::endl;
             }
         }
-        std::chrono::milliseconds duration(static_cast<long long>(order.getBakingTime()));
+        std::chrono::seconds duration(static_cast<long long>(order.getBakingTime()));
         std::this_thread::sleep_for(duration);
         {
             std::unique_lock<std::mutex> stockLock(_stockMutex);

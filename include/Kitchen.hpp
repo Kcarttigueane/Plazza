@@ -22,7 +22,7 @@ class Kitchen {
     size_t _kitchenId;
     size_t _cooksPerKitchen;
     size_t _replenishmentTime;
-    size_t _timeMultiplier;
+    float _timeMultiplier;
 
     std::unique_ptr<NamedPipeIPC> _orderPipe;
     std::unique_ptr<NamedPipeIPC> _updatePipe;
@@ -73,7 +73,7 @@ class Kitchen {
 
     void initThreads();
 
-    void run();
+    [[noreturn]] void run();
 
     void sendUpdateMessage(const PizzaOrder& order);
 
