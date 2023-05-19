@@ -88,11 +88,6 @@ void Kitchen::cook(std::stop_token stopToken)
                 break;
             order = _pizzaOrderQueue.front();
             _pizzaOrderQueue.erase(_pizzaOrderQueue.begin());
-            std::cout << _pizzaOrderQueue.front() << std::endl;
-
-            if (!_pizzaOrderQueue.empty()) {
-                std::cout << _pizzaOrderQueue.front() << std::endl;
-            }
         }
         std::chrono::seconds duration(static_cast<long long>(order.getBakingTime()));
         std::this_thread::sleep_for(duration);
@@ -122,6 +117,7 @@ void Kitchen::replenishStock(const std::stop_token& st)
             for (auto& [ingredient, currentStock] : _stock.getStock()) {
                 _stock.addIngredient(ingredient, 1);
             }
+            std::cout << "Replenishing stock" << std::endl;
         }
         // _stock.printStock();
 
