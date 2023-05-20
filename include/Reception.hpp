@@ -67,6 +67,11 @@ class Reception {
 
     [[nodiscard]] size_t getMaxOrdersPerKitchen() const { return _maxOrdersPerKitchen; }
 
+    [[nodiscard]] std::chrono::steady_clock::time_point getLastUpdateTime(pid_t pid) const
+    {
+        return _kitchens.at(pid).lastUpdateTime;
+    }
+
     NamedPipeIPC& getNamedPipeByPid(pid_t pid)
     {
         auto it = _kitchens.find(pid);
@@ -79,7 +84,7 @@ class Reception {
     }
 
     // ! Methods
-
+    bool canWrite();
     void interactiveShellLoop();
     void sendStatusRequestToAllKitchens();
     void processUpdates(std::atomic_bool& running);
