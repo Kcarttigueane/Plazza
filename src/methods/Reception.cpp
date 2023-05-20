@@ -9,23 +9,41 @@
 
 #include <format>
 #include <iomanip>
+#include <fcntl.h>
+#include <sys/select.h>
+#include <unordered_set>
 
-void Reception::interactiveShellLoop()
-{
+bool Reception::canWrite() {
+    fd_set readSet;
+    FD_ZERO(&readSet);
+    FD_SET(STDIN_FILENO, &readSet);
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    int ready = select(STDIN_FILENO + 1, &readSet, nullptr, nullptr, &timeout);
+    return (ready > 0 && FD_ISSET(STDIN_FILENO, &readSet));
+}
+
+void Reception::interactiveShellLoop() {
     while (true) {
-        std::string input;
-        std::cout << PROMPT;
-        std::getline(std::cin, input);
+        if (canWrite()) {
+            std::string input;
+            std::cout << PROMPT;
+            std::getline(std::cin, input);
 
-        if (input == "QUIT") {
-            break;
+            if (input == "QUIT")
+                break;
+
+            if (input == "status")
+                sendStatusRequestToAllKitchens();
+
+            parsePizzaOrder(input, *this);
         }
 
-        if (input == "status") {
-            sendStatusRequestToAllKitchens();
-        }
-
-        parsePizzaOrder(input, *this);
+        closeIdleKitchens();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -51,6 +69,9 @@ void Reception::createNewKitchen()
         std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Write);
     kitchenInfo.updatePipe =
         std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Read);
+    kitchenInfo.activeOrders = 0;
+    kitchenInfo.lastUpdateTime = std::chrono::steady_clock::time_point::max();
+
 
     std::unique_lock<std::mutex> lock(_kitchensMutex);
     _kitchens[kitchenPid] = std::move(kitchenInfo);
@@ -61,7 +82,6 @@ void Reception::distributeOrder(PizzaOrder& order)
     pid_t targetKitchenPID = FAILURE;
     size_t minActiveOrders = std::numeric_limits<size_t>::max();
 
-    // Find the kitchen with the least active orders
     for (const auto& [kitchenPID, kitchenInfo] : _kitchens) {
         if (kitchenInfo.activeOrders < minActiveOrders) {
             minActiveOrders = kitchenInfo.activeOrders;
@@ -69,23 +89,21 @@ void Reception::distributeOrder(PizzaOrder& order)
         }
     }
 
-    // If all kitchens are fully loaded (or there are no kitchens), create a new one
     if (minActiveOrders >= _maxOrdersPerKitchen) {
         createNewKitchen();
         targetKitchenPID = _kitchenPIDs.back();
     }
 
-    // Send the order to the selected kitchen
     NamedPipeIPC& orderPipe = getNamedPipeByPid(targetKitchenPID);
     std::ostringstream oss;
     oss << order;
     std::string serializedPizzaOrder = oss.str();
     orderPipe.write(serializedPizzaOrder);
 
-    // Update the load of the kitchen
     KitchenInfo& targetKitchenInfo = _kitchens[targetKitchenPID];
     targetKitchenInfo.activeOrders++;
     targetKitchenInfo.recentLoads.push_back(targetKitchenInfo.activeOrders);
+    targetKitchenInfo.lastUpdateTime = std::chrono::steady_clock::time_point::max();
 
     if (targetKitchenInfo.recentLoads.size() > _loadWindowSize) {
         size_t removedLoad = targetKitchenInfo.recentLoads.front();
@@ -97,7 +115,39 @@ void Reception::distributeOrder(PizzaOrder& order)
         targetKitchenInfo.activeOrders / static_cast<float>(_loadWindowSize);
 }
 
-void Reception::closeIdleKitchens() {}
+void Reception::closeIdleKitchens() {
+    const std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
+    std::unordered_set<pid_t> idleKitchens;
+
+    for (auto it = _kitchens.begin(); it != _kitchens.end();) {
+        const pid_t pid = it->first;
+        const std::chrono::steady_clock::time_point lastUpdate = getLastUpdateTime(pid);
+
+        if (lastUpdate == std::chrono::steady_clock::time_point::max() || it->second.activeOrders > 0) {
+            ++it;
+            continue;
+        }
+
+        const std::chrono::duration<double> elapsedSeconds = currentTime - lastUpdate;
+        if (elapsedSeconds.count() > 5.0) {
+            idleKitchens.insert(pid);
+            ++it;
+        } else
+            ++it;
+    }
+
+    for (const pid_t pid : idleKitchens) {
+        kill(pid, SIGTERM);
+        int status;
+        waitpid(pid, &status, 0);
+        _kitchens.erase(pid);
+        _kitchenPIDs.erase(std::remove(_kitchenPIDs.begin(), _kitchenPIDs.end(), pid), _kitchenPIDs.end());
+        std::cout << "Kitchen " << pid << " has been closed." << std::endl;
+    }
+}
+
+
+
 
 void Reception::sendStatusRequestToAllKitchens()
 {
@@ -154,11 +204,9 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
             NamedPipeIPC& updatePipe = *kitchenInfo.updatePipe;
 
             std::string update = updatePipe.read();
-
             if (update.empty()) {
                 continue;
             }
-
             size_t pos = update.find(':');
             std::string first_word = update.substr(0, pos);
 

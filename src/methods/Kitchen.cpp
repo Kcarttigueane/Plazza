@@ -117,7 +117,6 @@ void Kitchen::replenishStock(const std::stop_token& st)
             for (auto& [ingredient, currentStock] : _stock.getStock()) {
                 _stock.addIngredient(ingredient, 1);
             }
-            std::cout << "Replenishing stock" << std::endl;
         }
         // _stock.printStock();
 
