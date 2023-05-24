@@ -23,7 +23,7 @@ SRCS = 	$(wildcard $(SRCDIR)/methods/*.cpp) \
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(OBJS:.o=.d)
 
-CXXFLAGS += -std=c++20 -Wall -Wextra -I ./include -g3
+CXXFLAGS += -std=c++2a -Wall -Wextra -I ./include -g3
 
 all: $(NAME)
 
