@@ -9,7 +9,6 @@
 
 #include <fcntl.h>
 #include <sys/select.h>
-#include <format>
 #include <iomanip>
 #include <unordered_set>
 
