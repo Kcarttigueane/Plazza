@@ -7,7 +7,6 @@
 
 #include "Reception.hpp"
 
-#include <fcntl.h>
 #include <sys/select.h>
 #include <iomanip>
 #include <unordered_set>
@@ -18,7 +17,7 @@ bool Reception::canWrite()
     FD_ZERO(&readSet);
     FD_SET(STDIN_FILENO, &readSet);
 
-    struct timeval timeout;
+    struct timeval timeout{};
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
@@ -234,7 +233,6 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 _statusResponses.push_back(formattedString);
 
                 {
-                    std::lock_guard<std::mutex> lock(_printMutex);
                     displayStatusResponses();
                 }
             } else {

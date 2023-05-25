@@ -10,7 +10,7 @@
 #include <sstream>
 #include "Plazza.hpp"
 
-Ingredients::Ingredients(size_t replenishmentTime) : _replenishmentTime(replenishmentTime)
+Ingredients::Ingredients()
 {
     initialize_stock();
 }

@@ -42,7 +42,6 @@
     "tuple": "cpp",
     "type_traits": "cpp",
     "utility": "cpp",
-    "format": "cpp",
     "fstream": "cpp",
     "initializer_list": "cpp",
     "iomanip": "cpp",
@@ -57,7 +56,6 @@
     "span": "cpp",
     "sstream": "cpp",
     "stdexcept": "cpp",
-    "stop_token": "cpp",
     "streambuf": "cpp",
     "thread": "cpp",
     "typeinfo": "cpp",
@@ -112,8 +110,5 @@
   "editor.formatOnSave": true,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
-  "C_Cpp.default.cppStandard": "c++20",
-  "workbench.colorCustomizations": {
-    "editor.selectionBackground": "#b8019f"
-  }
+  "C_Cpp.default.cppStandard": "c++20"
 }

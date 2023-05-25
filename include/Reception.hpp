@@ -85,7 +85,7 @@ class Reception {
     }
 
     // ! Methods
-    bool canWrite();
+    static bool canWrite();
     void interactiveShellLoop();
     void sendStatusRequestToAllKitchens();
     void processUpdates(std::atomic_bool& running);

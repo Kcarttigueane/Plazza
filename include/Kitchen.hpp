@@ -51,7 +51,7 @@ class Kitchen {
           _timeMultiplier(timeMultiplier),
           _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
           _updatePipe(std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Write)),
-          _stock(replenishmentTime),
+          _stock(),
           _cookId(0),
           _stopThreads(false)
     {
