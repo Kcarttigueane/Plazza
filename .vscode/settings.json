@@ -42,7 +42,6 @@
     "tuple": "cpp",
     "type_traits": "cpp",
     "utility": "cpp",
-    "format": "cpp",
     "fstream": "cpp",
     "initializer_list": "cpp",
     "iomanip": "cpp",
@@ -57,7 +56,6 @@
     "span": "cpp",
     "sstream": "cpp",
     "stdexcept": "cpp",
-    "stop_token": "cpp",
     "streambuf": "cpp",
     "thread": "cpp",
     "typeinfo": "cpp",
@@ -103,9 +101,7 @@
     "typeindex": "cpp",
     "unordered_set": "cpp"
   },
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "C_Cpp.clang_format_style": ".clang-format",
   "C_Cpp.formatting": "clangFormat",
   "C_Cpp.clang_format_sortIncludes": true,

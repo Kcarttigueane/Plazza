@@ -7,10 +7,10 @@
 
 #include "Ingredients.hpp"
 #include <algorithm>
-#include <format>
+#include <sstream>
 #include "Plazza.hpp"
 
-Ingredients::Ingredients(size_t replenishmentTime) : _replenishmentTime(replenishmentTime)
+Ingredients::Ingredients()
 {
     initialize_stock();
 }
@@ -36,7 +36,10 @@ std::string Ingredients::getTotalStock() const
         stock += count;
     }
 
-    return std::format("{}", stock);
+    std::stringstream ss;
+    ss << stock;
+
+    return ss.str();
 }
 
 void Ingredients::addIngredient(const std::string& ingredient, int amount)
@@ -56,7 +59,9 @@ bool Ingredients::removeIngredient(const std::string& ingredient, int amount)
 void Ingredients::printStock()
 {
     for (const auto& [ingredient, count] : _stock) {
-        std::cout << std::format("{}={}\n", ingredient, count);
+        std::stringstream ss;
+        ss << ingredient << "=" << count << "\n";
+        std::cout << ss.str();
     }
 }
 

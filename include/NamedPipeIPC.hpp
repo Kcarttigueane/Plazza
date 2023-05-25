@@ -111,7 +111,7 @@ class NamedPipeIPC {
         int flags = (_mode == Mode::Read) ? O_RDONLY : O_WRONLY;
         _pipeFd = open(_pipeName.c_str(), flags);
 
-        std::cout << BLUE_TEXT("[OPEN]: ") << RED_TEXT(_pipeName) << std::endl;
+        // std::cout << BLUE_TEXT("[OPEN]: ") << RED_TEXT(_pipeName) << std::endl;  // ** DEBUG
 
         if (_pipeFd < 0) {
             throw std::runtime_error("Failed to open the named pipe");

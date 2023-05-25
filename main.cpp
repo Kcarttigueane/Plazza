@@ -23,12 +23,14 @@ int main(int argc, char* argv[])
 
         Reception reception(timeMultiplier, cooksPerKitchen, replenishmentTime, 5);
 
-        std::jthread updatesDisplayThread(
+        std::thread updatesDisplayThread(
             [&reception, &stopThread]() { reception.processUpdates(stopThread); });
 
         reception.interactiveShellLoop();
 
         stopThread = true;
+
+        updatesDisplayThread.join();
 
     } catch (const std::invalid_argument& e) {
         std::cerr << "Error: " << e.what() << std::endl;

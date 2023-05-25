@@ -7,18 +7,17 @@
 
 #include "Reception.hpp"
 
-#include <format>
-#include <iomanip>
-#include <fcntl.h>
 #include <sys/select.h>
+#include <iomanip>
 #include <unordered_set>
 
-bool Reception::canWrite() {
+bool Reception::canWrite()
+{
     fd_set readSet;
     FD_ZERO(&readSet);
     FD_SET(STDIN_FILENO, &readSet);
 
-    struct timeval timeout;
+    struct timeval timeout{};
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
@@ -26,7 +25,8 @@ bool Reception::canWrite() {
     return (ready > 0 && FD_ISSET(STDIN_FILENO, &readSet));
 }
 
-void Reception::interactiveShellLoop() {
+void Reception::interactiveShellLoop()
+{
     while (true) {
         if (canWrite()) {
             std::string input;
@@ -72,7 +72,6 @@ void Reception::createNewKitchen()
     kitchenInfo.activeOrders = 0;
     kitchenInfo.lastUpdateTime = std::chrono::steady_clock::time_point::max();
 
-
     std::unique_lock<std::mutex> lock(_kitchensMutex);
     _kitchens[kitchenPid] = std::move(kitchenInfo);
 }
@@ -115,7 +114,8 @@ void Reception::distributeOrder(PizzaOrder& order)
         targetKitchenInfo.activeOrders / static_cast<float>(_loadWindowSize);
 }
 
-void Reception::closeIdleKitchens() {
+void Reception::closeIdleKitchens()
+{
     const std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
     std::unordered_set<pid_t> idleKitchens;
 
@@ -123,7 +123,8 @@ void Reception::closeIdleKitchens() {
         const pid_t pid = it->first;
         const std::chrono::steady_clock::time_point lastUpdate = getLastUpdateTime(pid);
 
-        if (lastUpdate == std::chrono::steady_clock::time_point::max() || it->second.activeOrders > 0) {
+        if (lastUpdate == std::chrono::steady_clock::time_point::max() ||
+            it->second.activeOrders > 0) {
             ++it;
             continue;
         }
@@ -141,13 +142,14 @@ void Reception::closeIdleKitchens() {
         int status;
         waitpid(pid, &status, 0);
         _kitchens.erase(pid);
-        _kitchenPIDs.erase(std::remove(_kitchenPIDs.begin(), _kitchenPIDs.end(), pid), _kitchenPIDs.end());
-        std::cout << "Kitchen " << pid << " has been closed." << std::endl;
+        _kitchenPIDs.erase(std::remove(_kitchenPIDs.begin(), _kitchenPIDs.end(), pid),
+                           _kitchenPIDs.end());
+        {
+            std::lock_guard<std::mutex> lock(_printMutex);
+            std::cout << "Kitchen " << pid << " has been closed." << std::endl;
+        }
     }
 }
-
-
-
 
 void Reception::sendStatusRequestToAllKitchens()
 {
@@ -174,12 +176,13 @@ std::tuple<std::string, int, int, std::string> parseStatusResponse(
 void Reception::displayStatusResponses()
 {
     if (_kitchens.empty()) {
-        std::cout << "No kitchens are currently running." << std::endl;
+        std::cout << "'status': No kitchens are currently running." << std::endl;
         return;
     }
 
     if (_statusResponses.size() != _kitchenPIDs.size()) {
-        std::cout << "Not all kitchens have responded yet." << std::endl;
+        std::cout << "'status': Not all kitchens have responded yet to the statusRequest"
+                  << std::endl;
         return;
     }
 
@@ -189,9 +192,8 @@ void Reception::displayStatusResponses()
               << " | " << std::setw(16) << "Ingredient Stock" << std::endl;
 
     for (const auto& statusResponse : _statusResponses) {
-        std::cout << statusResponse << std::endl;
+        std::cout << statusResponse << '\n';
     }
-
     _statusResponses.clear();
 }
 
@@ -216,14 +218,28 @@ void Reception::processUpdates(std::atomic_bool& stopThread)
                 int availableCooks = std::get<1>(statusTuple);
                 int pizzasInProgress = std::get<2>(statusTuple);
                 std::string ingredientStock = std::get<3>(statusTuple);
-                std::cout << MAGENTA_TEXT(ingredientStock) << std::endl;
-                std::string formattedString =
-                    std::format("{0:<10} | {1:<18} | {2:<15} | {3:<16}", kitchenID,
-                                pizzasInProgress, availableCooks, ingredientStock);
+                // std::cout << MAGENTA_TEXT(ingredientStock) << std::endl;
+                // std::string formattedString =
+                //     std::format("{0:<10} | {1:<18} | {2:<15} | {3:<16}", kitchenID,
+                //                 pizzasInProgress, availableCooks, ingredientStock);
+                // _statusResponses.push_back(formattedString);
+
+                std::ostringstream formattedStream;
+                formattedStream << std::setw(10) << kitchenID << " | " << std::setw(18)
+                                << pizzasInProgress << " | " << std::setw(15) << availableCooks
+                                << " | " << std::setw(16) << ingredientStock;
+                std::string formattedString = formattedStream.str();
+
                 _statusResponses.push_back(formattedString);
-                displayStatusResponses();
+
+                {
+                    displayStatusResponses();
+                }
             } else {
-                std::cout << MAGENTA_TEXT(update) << std::endl;
+                {
+                    std::lock_guard<std::mutex> lock(_printMutex);
+                    std::cout << MAGENTA_TEXT(update) << std::endl;
+                }
                 appendToFile("log.txt", update);
                 _kitchens[pid].activeOrders--;
                 _kitchens[pid].lastUpdateTime = std::chrono::steady_clock::now();

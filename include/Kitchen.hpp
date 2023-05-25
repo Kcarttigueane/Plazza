@@ -13,7 +13,6 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <stop_token>
 #include <thread>
 #include <vector>
 
@@ -27,19 +26,21 @@ class Kitchen {
     std::unique_ptr<NamedPipeIPC> _orderPipe;
     std::unique_ptr<NamedPipeIPC> _updatePipe;
 
-    std::jthread _replenishmentThread;
-    std::vector<std::jthread> _cookThread;
+    std::thread _replenishmentThread;
+    std::vector<std::thread> _cookThread;
 
     Ingredients _stock;
     std::vector<PizzaOrder> _pizzaOrderQueue;
 
     std::mutex _orderMutex;
+    std::mutex _printMutex;
     std::condition_variable _orderCV;
     std::condition_variable _stockCV;
 
     std::mutex _stockMutex;
 
     std::atomic<size_t> _cookId;
+    std::atomic<bool> _stopThreads;
 
   public:
     Kitchen(size_t cooksPerKitchen, size_t replenishmentTime, const std::string& orderPipeName,
@@ -50,14 +51,28 @@ class Kitchen {
           _timeMultiplier(timeMultiplier),
           _orderPipe(std::make_unique<NamedPipeIPC>(orderPipeName, NamedPipeIPC::Mode::Read)),
           _updatePipe(std::make_unique<NamedPipeIPC>(updatePipeName, NamedPipeIPC::Mode::Write)),
-          _stock(replenishmentTime),
-          _cookId(0)
+          _stock(),
+          _cookId(0),
+          _stopThreads(false)
     {
         _pizzaOrderQueue = std::vector<PizzaOrder>();
         initThreads();
     }
 
-    ~Kitchen() = default;
+    ~Kitchen()
+    {
+        _stopThreads = true;
+
+        for (auto& thread : _cookThread) {
+            if (thread.joinable()) {
+                thread.join();
+            }
+        }
+
+        if (_replenishmentThread.joinable()) {
+            _replenishmentThread.join();
+        }
+    }
 
     // ! Getters:
 
@@ -73,13 +88,13 @@ class Kitchen {
 
     void initThreads();
 
-    [[noreturn]] void run();
+    void run();
 
     void sendUpdateMessage(const PizzaOrder& order);
 
     void sendStatusResponse();
 
-    void cook(std::stop_token stopToken);
+    void cook();
 
-    void replenishStock(const std::stop_token& st);
+    void replenishStock();
 };
