@@ -18,8 +18,8 @@ void NamedPipeIPC::write(const std::string& message)
 
     ssize_t bytesWritten = ::write(_pipeFd, message.c_str(), message.size());
 
-    std::cout << BLUE_TEXT("[WRITE]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message)
-              << "\"" << std::endl;
+    // std::cout << BLUE_TEXT("[WRITE]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message)
+    //           << "\"" << std::endl;  // ** DEBUG
 
     if (bytesWritten != static_cast<ssize_t>(message.size())) {
         throw std::runtime_error("Failed to write the complete message to the named pipe");
@@ -42,8 +42,9 @@ std::string NamedPipeIPC::read()
         message << ch;
     }
 
-    std::cout << BLUE_TEXT("[READ]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message.str())
-              << "\"" << std::endl;
+    // std::cout << BLUE_TEXT("[READ]: ") << RED_TEXT(_pipeName) << " : \"" GREEN_TEXT(message.str())
+    //           << "\"" << std::endl;  // ** DEBUG
+
     if (ch != DELIMITER) {
         throw std::runtime_error("Failed to read the complete message from the named pipe");
     }

@@ -37,6 +37,7 @@ class Reception {
     std::vector<std::string> _statusResponses;
 
     std::mutex _kitchensMutex;
+    std::mutex _printMutex;
 
   public:
     Reception(float multiplier, size_t cooksPerKitchen, size_t replenishmentTime,

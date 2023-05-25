@@ -103,9 +103,7 @@
     "typeindex": "cpp",
     "unordered_set": "cpp"
   },
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "C_Cpp.clang_format_style": ".clang-format",
   "C_Cpp.formatting": "clangFormat",
   "C_Cpp.clang_format_sortIncludes": true,
@@ -114,5 +112,8 @@
   "editor.formatOnSave": true,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
-  "C_Cpp.default.cppStandard": "c++20"
+  "C_Cpp.default.cppStandard": "c++20",
+  "workbench.colorCustomizations": {
+    "editor.selectionBackground": "#b8019f"
+  }
 }
