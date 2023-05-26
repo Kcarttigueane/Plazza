@@ -47,17 +47,17 @@ void Kitchen::run()
     }
 }
 
-void Kitchen::sendUpdateMessage(const PizzaOrder& order)
+void Kitchen::sendUpdateMessage(const PizzaOrder& order, std::size_t cookId)
 {
     std::ostringstream oss;
     oss << "PizzaOrderResponse: [" << getCurrentTimeString() << "] Order #" << order.getOrderId()
         << " (" << order.getPizzaOrderIndex() << "/" << order.getTotalPizzasOrdered()
         << ") completed : " << order.getTypeString() << " (" << order.getSizeString()
-        << ") prepared by Kitchen #" << _kitchenId << "!";
+        << ") prepared by Kitchen #" << _kitchenId << " (cook #" << cookId << ")";
 
     std::string msg = oss.str();
 
-    // {
+    // { // ** DEBUG **
     //     std::lock_guard<std::mutex> lock(_printMutex);
     //     std::cout << msg << std::endl;
     // }
@@ -73,7 +73,7 @@ void Kitchen::sendStatusResponse()
 
     std::string statusResponse = oss.str();
 
-    // {
+    // { // ** DEBUG **
     //     std::lock_guard<std::mutex> lock(_printMutex);
     //     std::cout << CYAN_TEXT(statusResponse) << std::endl;
     // }
@@ -114,7 +114,10 @@ void Kitchen::cook()
                 _stock.removeIngredient(ingredient.first, ingredient.second);
             }
         }
-        sendUpdateMessage(order);
+        {
+            std::lock_guard<std::mutex> lock(_cookMutex);
+            sendUpdateMessage(order, cookId);
+        }
     }
 }
 
@@ -128,7 +131,7 @@ void Kitchen::replenishStock()
                 _stock.addIngredient(ingredient, 1);
             }
         }
-        // _stock.printStock();
+        // _stock.printStock(); // ** DEBUG **
 
         _orderCV.notify_all();
         _stockCV.notify_all();

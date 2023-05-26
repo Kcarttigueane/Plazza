@@ -38,6 +38,7 @@ class Kitchen {
     std::condition_variable _stockCV;
 
     std::mutex _stockMutex;
+    std::mutex _cookMutex;
 
     std::atomic<size_t> _cookId;
     std::atomic<bool> _stopThreads;
@@ -90,7 +91,7 @@ class Kitchen {
 
     void run();
 
-    void sendUpdateMessage(const PizzaOrder& order);
+    void sendUpdateMessage(const PizzaOrder& order, std::size_t cookId);
 
     void sendStatusResponse();
 

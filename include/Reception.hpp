@@ -84,6 +84,17 @@ class Reception {
         }
     }
 
+    size_t getKitchenIdByPid(pid_t pid) const
+    {
+        auto it = _kitchens.find(pid);
+
+        if (it == _kitchens.end()) {
+            throw std::runtime_error("No kitchen with pid " + std::to_string(pid));
+        } else {
+            return *it->second.kitchenId;
+        }
+    }
+
     // ! Methods
     static bool canWrite();
     void interactiveShellLoop();

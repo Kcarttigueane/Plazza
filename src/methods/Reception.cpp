@@ -17,7 +17,8 @@ bool Reception::canWrite()
     FD_ZERO(&readSet);
     FD_SET(STDIN_FILENO, &readSet);
 
-    struct timeval timeout{};
+    struct timeval timeout {};
+
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
@@ -59,6 +60,12 @@ void Reception::createNewKitchen()
                         _timeMultiplier, newKitchenId);
         kitchen.run();
     });
+
+    {
+        std::lock_guard<std::mutex> lock(_printMutex);
+        std::cout << MAGENTA_TEXT("Create New Kitchen #") << MAGENTA_TEXT(newKitchenId)
+                  << std::endl;
+    }
 
     pid_t kitchenPid = process.getPid();
     _kitchenPIDs.push_back(kitchenPid);
@@ -138,16 +145,17 @@ void Reception::closeIdleKitchens()
     }
 
     for (const pid_t pid : idleKitchens) {
+        size_t kitchenIdKilled = getKitchenIdByPid(pid);
+        {
+            std::lock_guard<std::mutex> lock(_printMutex);
+            std::cout << "Kitchen " << kitchenIdKilled << " has been closed." << std::endl;
+        }
         kill(pid, SIGTERM);
         int status;
         waitpid(pid, &status, 0);
         _kitchens.erase(pid);
         _kitchenPIDs.erase(std::remove(_kitchenPIDs.begin(), _kitchenPIDs.end(), pid),
                            _kitchenPIDs.end());
-        {
-            std::lock_guard<std::mutex> lock(_printMutex);
-            std::cout << "Kitchen " << pid << " has been closed." << std::endl;
-        }
     }
 }
 
